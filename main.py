@@ -6,9 +6,9 @@ from pwinput import pwinput
 from appdirs import user_config_dir
 from typing_extensions import Annotated
 from password_strength import PasswordStats
-from lib.symmetric.encrypt import encrypt
-from lib.symmetric.decrypt import decrypt
-from lib.initialize import initialize_cryptbuddy
+from cryptlib.symmetric.encrypt import encrypt
+from cryptlib.symmetric.decrypt import decrypt
+from cryptlib.initialize import initialize_cryptbuddy
 
 app = typer.Typer()
 dir = user_config_dir("cryptbuddy")
