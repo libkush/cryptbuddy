@@ -6,9 +6,10 @@ from pwinput import pwinput
 from appdirs import user_config_dir
 from typing_extensions import Annotated
 from password_strength import PasswordStats
-from cryptlib.symmetric.encrypt import encrypt
-from cryptlib.symmetric.decrypt import decrypt
+from cryptlib.savechunks import savetofile
 from cryptlib.initialize import initialize_cryptbuddy
+from cryptlib.symmetric.encrypt import symmetric_encrypt
+from cryptlib.symmetric.decrypt import symmetric_decrypt
 
 app = typer.Typer()
 dir = user_config_dir("cryptbuddy")
@@ -47,12 +48,13 @@ def symncrypt(file: Annotated[Path, typer.Option()], password: Annotated[Optiona
                            fg=typer.colors.YELLOW, bold=True)
         typer.echo(warn)
     try:
-        encrypt(file, password, SymConfig(
+        chunks = symmetric_encrypt(file, password, SymConfig(
             64 * 1024, secret.SecretBox.MACBYTES))
+        encrypted_path = Path(f"{file}.enc")
+        savetofile(chunks, encrypted_path)
     except Exception as e:
         e = typer.style(e, fg=typer.colors.RED, bold=True)
         typer.echo(e)
-        Path(f"{file}.enc").unlink()
         raise typer.Exit(1)
     typer.echo("Encrypted file saved")
     if replace:
@@ -67,17 +69,28 @@ def symdcrypt(file: Annotated[Path, typer.Option()], password: Annotated[Optiona
     if not password:
         password = pwinput("Enter password: ")
     try:
-        decrypt(file, password, SymConfig(
+        chunks = symmetric_decrypt(file, password, SymConfig(
             64 * 1024, secret.SecretBox.MACBYTES))
+        decrypted_path = Path(f"{file}.dec")
+        savetofile(chunks, decrypted_path)
     except Exception as e:
         e = typer.style(e, fg=typer.colors.RED, bold=True)
         typer.echo(e)
-        Path(f"{file}.dec").unlink()
         raise typer.Exit(1)
     typer.echo("Decrypted file saved")
     if replace:
         Path(file).unlink()
 
 
+# @app.command()
+# def asymncrypt(file: Annotated[Path, typer.Option()], replace: Annotated[Optional[bool], typer.Option()] = False):
+#     if not Path(file).is_file():
+#         typer.echo("File not found")
+#         raise typer.Exit(1)
+#     pivateKey = Path(f"{dir}/private.key.enc")
+#     if not pivateKey.is_file():
+#         typer.echo("Private key not found. Please run 'cryptbuddy init' first")
+#         raise typer.Exit(1)
+#     try:
 if __name__ == "__main__":
     app()
