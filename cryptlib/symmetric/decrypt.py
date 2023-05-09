@@ -20,7 +20,7 @@ def decrypt(file: Path, password: str, config):
                       salt, opslimit=ops, memlimit=mem)
             box = secret.SecretBox(key)
             _newline = infile.read(1)
-            while True:
+            while 1:
                 rchunk = infile.read(chunksize + macsize)
                 if len(rchunk) == 0:
                     break

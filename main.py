@@ -21,8 +21,16 @@ class SymConfig:
 
 
 @app.command()
-def init():
-    initialize_cryptbuddy()
+def init(password: Annotated[Optional[str], typer.Option()] = None):
+    if not password:
+        password = pwinput("Enter password: ")
+    stats = PasswordStats(password).strength()
+    if stats < 0.66:
+        error = typer.style("ERROR: Password is too weak!",
+                            fg=typer.colors.RED, bold=True)
+        typer.echo(error)
+        raise typer.Exit(1)
+    initialize_cryptbuddy(password, dir)
     typer.echo("Generated private key")
 
 
@@ -36,13 +44,15 @@ def symncrypt(file: Annotated[Path, typer.Option()], password: Annotated[Optiona
     stats = PasswordStats(password).strength()
     if stats < 0.66:
         warn = typer.style("WARNING: Password is too weak!",
-                           fg=typer.colors.WHITE, bg=typer.colors.RED)
+                           fg=typer.colors.YELLOW, bold=True)
         typer.echo(warn)
     try:
         encrypt(file, password, SymConfig(
             64 * 1024, secret.SecretBox.MACBYTES))
     except Exception as e:
+        e = typer.style(e, fg=typer.colors.RED, bold=True)
         typer.echo(e)
+        Path(f"{file}.enc").unlink()
         raise typer.Exit(1)
     typer.echo("Encrypted file saved")
     if replace:
@@ -60,7 +70,9 @@ def symdcrypt(file: Annotated[Path, typer.Option()], password: Annotated[Optiona
         decrypt(file, password, SymConfig(
             64 * 1024, secret.SecretBox.MACBYTES))
     except Exception as e:
+        e = typer.style(e, fg=typer.colors.RED, bold=True)
         typer.echo(e)
+        Path(f"{file}.dec").unlink()
         raise typer.Exit(1)
     typer.echo("Decrypted file saved")
     if replace:

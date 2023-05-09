@@ -27,7 +27,7 @@ def encrypt(file: Path, password: str, config):
             f.write(b'\n')
             f.write(nonce)
             f.write(b'\n')
-            while True:
+            while 1:
                 chunk = infile.read(chunksize)
                 if len(chunk) == 0:
                     break
