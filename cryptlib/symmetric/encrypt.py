@@ -4,18 +4,24 @@ from nacl import pwhash, secret, utils
 from pathlib import Path
 
 
-def symmetric_encrypt(file: Path, password: str) -> bytelist:
+def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> bytelist:
     """
     Encrypts a file with a password and returns the encrypted chunks
     """
 
+    if not file.exists():
+        raise FileNotFoundError("File does not exist")
+    if not password and not key:
+        raise ValueError("Password or key must be provided")
+
     # Generate the salt, nonce, and key using the password
-    salt = utils.random(pwhash.argon2i.SALTBYTES)
-    nonce = utils.random(secret.SecretBox.NONCE_SIZE)
+    salt = utils.random(saltbytes)
+    nonce = utils.random(noncesize)
     encodedOps = str(ops).encode(encoding='UTF-8')
     encodedMem = str(mem).encode(encoding='UTF-8')
-    key = kdf(keysize, password.encode(),
-              salt, opslimit=ops, memlimit=mem)
+    if not key:
+        key = kdf(keysize, password.encode(),
+                  salt, opslimit=ops, memlimit=mem)
 
     # Create the box and empty list for the chunks
     box = secret.SecretBox(key)

@@ -1,5 +1,5 @@
 import typer
-from utils import *
+from cryptlib.utils import *
 from pathlib import Path
 from pwinput import pwinput
 from typing import Optional
@@ -35,7 +35,7 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 
     # Encrypt file symmetrically
     try:
-        chunks = symmetric_encrypt(file, password)
+        chunks = symmetric_encrypt(file, password=password)
         encrypted_path = Path(f"{file}.enc")
         write_chunks(chunks, encrypted_path)
     except Exception as e:

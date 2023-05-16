@@ -4,10 +4,15 @@ from cryptlib.constants import *
 from pathlib import Path
 
 
-def symmetric_decrypt(file: Path, password: str) -> bytelist:
+def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> bytelist:
     """
     Decrypts a file with a password and returns the decrypted chunks
     """
+
+    if not file.exists():
+        raise FileNotFoundError("File does not exist")
+    if not password and not key:
+        raise ValueError("Password or key must be provided")
 
     with open(file, "rb") as infile:
         outchunks = []
@@ -20,9 +25,10 @@ def symmetric_decrypt(file: Path, password: str) -> bytelist:
         ops = int(encodedOps.decode(encoding='UTF-8'))
         mem = int(encodedMem.decode(encoding='UTF-8'))
 
-        # Generate the key from the password
-        key = kdf(keysize, password.encode(),
-                  salt, opslimit=ops, memlimit=mem)
+        if not key:
+            # Generate the key from the password
+            key = kdf(keysize, password.encode(),
+                      salt, opslimit=ops, memlimit=mem)
         box = secret.SecretBox(key)
         _newline = infile.read(1)
 

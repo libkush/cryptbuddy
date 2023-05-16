@@ -62,7 +62,7 @@ class AppPrivateKey(BaseKey):
         write_bytes(key, temp_file)
 
         # Encrypt the key and get the chunks
-        chunks = symmetric_encrypt(temp_file, password)
+        chunks = symmetric_encrypt(temp_file, password=password)
 
         # Shred the temporary file
         shred_file(temp_file)
@@ -75,9 +75,10 @@ class AppPrivateKey(BaseKey):
         Creates a private key object from packed data
         """
         data = loads(packed)
+        meta = KeyMeta(data["name"], data["email"])
 
         # Return the private key object
-        return AppPrivateKey(data["name"], data["email"], data["chunks"])
+        return AppPrivateKey(meta, data["chunks"])
 
     @classmethod
     def from_file(cls, file: Path) -> "AppPrivateKey":
@@ -101,7 +102,7 @@ class AppPrivateKey(BaseKey):
         """
 
         # Write the encrypted chunks to a temporary file
-        temp_file = f"{cache_dir}/private.key.enc"
+        temp_file = Path(f"{cache_dir}/private.key.enc")
         write_chunks(self.chunks, temp_file)
 
         # Decrypt the chunks
@@ -111,7 +112,7 @@ class AppPrivateKey(BaseKey):
 
     def decrypted_key(self, password: str):
         """
-        Returns the packed and decrypted key
+        Returns the decrypted key
         """
 
         # Get the decrypted key chunks
@@ -157,9 +158,10 @@ class AppPublicKey(BaseKey):
         Creates a public key object from packed data
         """
         data = loads(packed)
+        meta = KeyMeta(data["name"], data["email"])
 
         # Return the public key object
-        return AppPublicKey(data["name"], data["email"], data["key"])
+        return AppPublicKey(meta, data["key"])
 
     @classmethod
     def from_file(cls, file: Path) -> "AppPublicKey":

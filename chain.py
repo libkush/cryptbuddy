@@ -1,5 +1,5 @@
 import typer
-from utils import *
+from cryptlib.utils import *
 from pathlib import Path
 from typing import Optional
 from typing_extensions import Annotated
