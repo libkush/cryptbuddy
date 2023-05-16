@@ -1,41 +1,29 @@
 import typer
+import chain
+from shutil import copyfile
+from utils import *
 from pathlib import Path
 from typing import Optional
 from pwinput import pwinput
-from cryptlib.file_io import shred_file
+from cryptlib.file_io import shred_file, write_chunks, config_dir
 from typing_extensions import Annotated
 from password_strength import PasswordStats
-from cryptlib.file_io import write_chunks
 from cryptlib.initialize import initialize_cryptbuddy
 from cryptlib.symmetric.encrypt import symmetric_encrypt
 from cryptlib.symmetric.decrypt import symmetric_decrypt
+
+
 app = typer.Typer()
-
-
-def success(msg: str):
-    """Print a success message"""
-    success = typer.style(f"SUCCESS: {msg}", fg=typer.colors.GREEN, bold=True)
-    typer.echo(success)
-
-
-def warning(msg: str):
-    """Print a warning message"""
-    warning = typer.style(f"WARNING: {msg}", fg=typer.colors.YELLOW, bold=True)
-    typer.echo(warning)
-
-
-def error(msg: str):
-    """Print an error message"""
-    error = typer.style(f"ERROR: {msg}", fg=typer.colors.RED, bold=True)
-    typer.echo(error)
-    raise typer.Exit(1)
+app.add_typer(chain.app, name="keychain")
 
 
 @app.command()
-def init(name: Annotated[str, typer.Option()],
-         email: Annotated[str, typer.Option()],
-         password: Annotated[Optional[str], typer.Option()] = None):
-    """Initialize cryptbuddy by generating a key-pair and creating the keychain database"""
+def init(name: Annotated[str, typer.Option(help="Full Name")],
+         email: Annotated[str, typer.Option(help="Email Address")],
+         password: Annotated[Optional[str], typer.Option(help="Password for encrypting private key")] = None):
+    """
+    Initialize cryptbuddy by generating a key-pair and creating the keychain database
+    """
 
     if not password:
         password = pwinput("Enter password: ")
@@ -55,10 +43,13 @@ def init(name: Annotated[str, typer.Option()],
 
 
 @app.command()
-def symencrypt(file: Annotated[Path, typer.Option()],
-               password: Annotated[Optional[str], typer.Option()] = None,
-               shred: Annotated[Optional[bool], typer.Option()] = False):
-    """Encrypt a file using a password"""
+def symencrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt")],
+               password: Annotated[Optional[str], typer.Option(
+                   help="Password for symmetric encryption")] = None,
+               shred: Annotated[Optional[bool], typer.Option(help="Shred the original file after encryption")] = False):
+    """
+    Encrypt a file using a password
+    """
 
     # Check if file exists
     if not file.exists():
@@ -87,10 +78,13 @@ def symencrypt(file: Annotated[Path, typer.Option()],
 
 
 @app.command()
-def symdecrypt(file: Annotated[Path, typer.Option()],
-               password: Annotated[Optional[str], typer.Option()] = None,
-               shred: Annotated[Optional[bool], typer.Option()] = False):
-    """Decrypt a file using a password"""
+def symdecrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
+               password: Annotated[Optional[str], typer.Option(
+                   help="Password for symmetric decryption")] = None,
+               shred: Annotated[Optional[bool], typer.Option(help="Shred the encrypted file after decryption")] = False):
+    """
+    Decrypt a file using a password
+    """
 
     # Check if file exists
     if not file.exists():
@@ -111,6 +105,34 @@ def symdecrypt(file: Annotated[Path, typer.Option()],
     # Shred file if specified
     if shred:
         shred_file(file)
+
+
+@app.command()
+def shred(file: Annotated[Path, typer.Option(help="Path of the file to shred")]):
+    """
+    Shred a file
+    """
+    if not file.exists():
+        error("File not found")
+    shred_file(file)
+    success("File shredded successfully")
+
+
+@app.command()
+def export(dir: Annotated[Path, typer.Option(help="Directory to copy the public key")]):
+    """
+    Export your public key to share with others
+    """
+    if not (dir.exists() or dir.is_dir()):
+        error("Directory not found")
+
+    # Copy public key to specified directory
+    try:
+        copyfile(Path(f"{config_dir}/public.key"), Path(f"{dir}/public.key"))
+    except Exception as e:
+        error(e)
+
+    success("File exported successfully")
 
 
 if __name__ == "__main__":

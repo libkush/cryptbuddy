@@ -1,21 +1,23 @@
 from pathlib import Path
 from nacl.public import PrivateKey
-from cryptlib.file_io import Directories
+from cryptlib.file_io import *
 from cryptlib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
 from cryptlib.keychain import keychain
 
 
 def initialize_cryptbuddy(name: str, email: str, password: str):
-    """Initializes CryptBuddy"""
+    """
+    Initializes CryptBuddy
+    """
 
     # Create user directories if they don't exist
-    Directories.create_directories()
+    create_directories()
 
     # Keypair will be stored in config directory
-    dir = Directories().config_dir
+    dir = config_dir
     print("Keys will be stored at: ", dir)
-    print("Keychain is at: ", Directories().data_dir)
-    print("Cache is at: ", Directories().cache_dir)
+    print("Keychain is at: ", data_dir)
+    print("Cache is at: ", cache_dir)
 
     # Check for correct argument values
     if not (isinstance(name, str) or isinstance(email, str) or isinstance(password, str)):

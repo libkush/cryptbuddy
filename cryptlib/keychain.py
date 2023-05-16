@@ -1,10 +1,12 @@
 import sqlite3
-from cryptlib.file_io import Directories
-data_dir = Directories().data_dir
+from cryptlib.file_io import *
 
 
 class keychain:
-    """A class that manages the keychain database. The keychain database stores public keys of other users"""
+    """
+    A class that manages the keychain database. The keychain database 
+    stores public keys of other users
+    """
 
     def __init__(self):
         conn = sqlite3.connect(
@@ -26,13 +28,17 @@ class keychain:
         self.c = c
 
     def add_key(self, name: str, key: bytes):
-        """Adds a public key to the database"""
+        """
+        Adds a public key to the database
+        """
         self.c.execute("INSERT INTO keys (name, key) VALUES (?, ?)",
                        (name, key))
         self.conn.commit()
 
     def get_key(self, name: str = None, id: int = None):
-        """Gets a public key from the database"""
+        """
+        Gets a public key from the database
+        """
 
         # Check if the user specified a name or id
         if not name and not id:
@@ -46,12 +52,17 @@ class keychain:
         return self.c.fetchone()[0]
 
     def get_names(self):
-        """Gets all the names of the users whose public keys are saved in the database"""
+        """
+        Gets all the names of the users whose public keys
+        are saved in the database
+        """
         self.c.execute("SELECT id, name FROM keys")
         return self.c.fetchall()
 
     def delete_key(self, name: str = None, id: int = None):
-        """Deletes a public key from the database"""
+        """
+        Deletes a public key from the database
+        """
 
         # Check if the user specified a name or id
         if not name and not id:
@@ -64,5 +75,7 @@ class keychain:
         self.conn.commit()
 
     def close(self):
-        """Closes the database connection"""
+        """
+        Closes the database connection
+        """
         self.conn.close()

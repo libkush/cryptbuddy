@@ -1,9 +1,8 @@
 from pathlib import Path
 from msgpack import dumps, loads
-from cryptlib.file_io import write_chunks, shred_file, Directories, write_bytes
+from cryptlib.file_io import *
 from cryptlib.symmetric.decrypt import symmetric_decrypt
 from cryptlib.symmetric.encrypt import symmetric_encrypt
-cache_dir = Directories().cache_dir
 
 
 # The key metadata object
@@ -44,7 +43,9 @@ class AppPrivateKey(BaseKey):
 
     # Saves the packed data
     def save(self, path: Path):
-        """Saves the packed key to a file"""
+        """
+        Saves the packed key to a file
+        """
         if path.exists():
             raise FileExistsError("File already exists")
         with open(path, "wb") as file:
@@ -52,7 +53,9 @@ class AppPrivateKey(BaseKey):
 
     @classmethod
     def from_original_key(cls, meta: KeyMeta, key: bytes, password: str) -> "AppPrivateKey":
-        """Creates a private key object from an NaCl private key"""
+        """
+        Creates a private key object from an NaCl private key
+        """
 
         # Write the key to a temporary file
         temp_file = Path(f"{cache_dir}/private.key")
@@ -68,15 +71,19 @@ class AppPrivateKey(BaseKey):
 
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPrivateKey":
-        """Creates a private key object from packed data"""
+        """
+        Creates a private key object from packed data
+        """
         data = loads(packed)
 
         # Return the private key object
         return AppPrivateKey(data["name"], data["email"], data["chunks"])
 
     @classmethod
-    def get_from_file(cls, file: Path) -> "AppPrivateKey":
-        """Gets a private key object from a file"""
+    def from_file(cls, file: Path) -> "AppPrivateKey":
+        """
+        Gets a private key object from a file
+        """
 
         # Check if file exists
         if not (file.exists() or file.is_file()):
@@ -89,7 +96,9 @@ class AppPrivateKey(BaseKey):
         return AppPrivateKey.from_packed(encoded_bytes)
 
     def decrypted_key_chunks(self, password: str):
-        """Returns the decrypted key chunks"""
+        """
+        Returns the decrypted key chunks
+        """
 
         # Write the encrypted chunks to a temporary file
         temp_file = f"{cache_dir}/private.key.enc"
@@ -99,6 +108,17 @@ class AppPrivateKey(BaseKey):
         chunks = symmetric_decrypt(temp_file, password)
 
         return chunks
+
+    def decrypted_key(self, password: str):
+        """
+        Returns the packed and decrypted key
+        """
+
+        # Get the decrypted key chunks
+        chunks = self.decrypted_key_chunks(password)
+
+        # Join the chunks and return the key
+        return b"".join(chunks)
 
 
 # The public key object
@@ -133,15 +153,19 @@ class AppPublicKey(BaseKey):
 
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPublicKey":
-        """Creates a public key object from packed data"""
+        """
+        Creates a public key object from packed data
+        """
         data = loads(packed)
 
         # Return the public key object
         return AppPublicKey(data["name"], data["email"], data["key"])
 
     @classmethod
-    def get_from_file(cls, file: Path) -> "AppPublicKey":
-        """Gets a public key object from a file"""
+    def from_file(cls, file: Path) -> "AppPublicKey":
+        """
+        Gets a public key object from a file
+        """
 
         # Check if file exists
         if not (file.exists() or file.is_file()):

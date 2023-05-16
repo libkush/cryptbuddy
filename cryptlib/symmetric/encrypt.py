@@ -1,17 +1,13 @@
 from nacl.bindings import sodium_increment
-from cryptlib.constants import Constants
+from cryptlib.constants import *
 from nacl import pwhash, secret, utils
 from pathlib import Path
 
-# Type hint for list of bytes
-bytelist = Constants().bytelist
-
 
 def symmetric_encrypt(file: Path, password: str) -> bytelist:
-    """Encrypts a file with a password and returns the encrypted chunks"""
-
-    # Get the constants
-    kdf, ops, mem, keysize, chunksize, macsize = Constants().all
+    """
+    Encrypts a file with a password and returns the encrypted chunks
+    """
 
     # Generate the salt, nonce, and key using the password
     salt = utils.random(pwhash.argon2i.SALTBYTES)

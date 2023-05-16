@@ -1,17 +1,13 @@
 from nacl.bindings import sodium_increment
 from nacl import pwhash, secret
-from cryptlib.constants import Constants
+from cryptlib.constants import *
 from pathlib import Path
-
-# Type hint for list of bytes
-bytelist = Constants().bytelist
 
 
 def symmetric_decrypt(file: Path, password: str) -> bytelist:
-    """Decrypts a file with a password and returns the decrypted chunks"""
-
-    # Get the constants
-    kdf, ops, mem, keysize, chunksize, macsize = Constants().all
+    """
+    Decrypts a file with a password and returns the decrypted chunks
+    """
 
     with open(file, "rb") as infile:
         outchunks = []
