@@ -2,6 +2,8 @@ import sqlite3
 from cryptlib.file_io import *
 
 
+create_directories()
+
 class keychain:
     """
     Manages the keychain. Keychain is a SQLite database 

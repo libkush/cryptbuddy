@@ -1,7 +1,6 @@
 import typer
 from cryptlib.utils import *
 from pathlib import Path
-from pwinput import pwinput
 from typing import Optional
 from typing_extensions import Annotated
 from password_strength import PasswordStats
@@ -14,8 +13,10 @@ app = typer.Typer()
 
 @app.command()
 def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt")],
-            password: Annotated[Optional[str], typer.Option(
-                help="Password for symmetric encryption")] = None,
+            password: Annotated[
+            str, typer.Option(
+                prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt the file")
+            ],
             shred: Annotated[Optional[bool], typer.Option(help="Shred the original file after encryption")] = False):
     """
     Encrypt a file using a password
@@ -24,9 +25,6 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
     # Check if file exists
     if not file.exists():
         error("File not found")
-
-    if not password:
-        password = pwinput("Enter password: ")
 
     # Check password strength
     stats = PasswordStats(password).strength()
@@ -49,8 +47,10 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 
 @app.command()
 def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
-            password: Annotated[Optional[str], typer.Option(
-                help="Password for symmetric decryption")] = None,
+            password: Annotated[
+            str, typer.Option(
+                prompt=True, confirmation_prompt=True, hide_input=True, help="Password to decrypt the file")
+            ],
             shred: Annotated[Optional[bool], typer.Option(help="Shred the encrypted file after decryption")] = False):
     """
     Decrypt a file using a password
@@ -59,9 +59,6 @@ def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt
     # Check if file exists
     if not file.exists():
         error("File not found")
-
-    if not password:
-        password = pwinput("Enter password: ")
 
     # Decrypt file symmetrically
     try:

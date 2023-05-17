@@ -3,7 +3,6 @@ import typer
 import symmetric
 from pathlib import Path
 from shutil import copyfile
-from pwinput import pwinput
 from cryptlib.utils import *
 from cryptlib.constants import *
 from typing import List, Optional
@@ -16,6 +15,7 @@ from cryptlib.encrypt import asymmetric_encrypt
 from cryptlib.initialize import initialize_cryptbuddy
 from cryptlib.file_io import shred_file, write_chunks, config_dir
 
+
 db = keychain()
 app = typer.Typer(name="cryptbuddy",
                   help="A CLI tool for encryption and decryption")
@@ -26,14 +26,11 @@ app.add_typer(symmetric.app, name="symmetric",
 
 @app.command()
 def init(name: Annotated[str, typer.Option(help="Username")],
-         email: Annotated[str, typer.Option(help="Email Address")],
-         password: Annotated[Optional[str], typer.Option(help="Password for encrypting private key")] = None):
+         email: Annotated[str, typer.Option(prompt=True, confirmation_prompt=True)],
+         password: Annotated[str, typer.Option(prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt your private key")]):
     """
     Initialize cryptbuddy by generating a key-pair and creating the keychain database
     """
-
-    if not password:
-        password = pwinput("Enter password: ")
 
     # Check password strength
     stats = PasswordStats(password).strength()
@@ -99,17 +96,19 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 
 @app.command()
 def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
-            password: Annotated[Optional[str], typer.Option(help="Password for decrypting private key")] = None):
+            password: Annotated[
+            str, typer.Option(
+                prompt=True, confirmation_prompt=True, hide_input=True, help="Password to decrypt your private key")
+            ],):
     """
     Decrypt a file using your private key
     """
+
     if not file.exists():
         error("File not found")
     private_key_path = Path(f"{config_dir}/private.key")
     if not private_key_path.exists():
         error("Private key not found")
-    if not password:
-        password = pwinput("Enter password: ")
 
     # Get your private key object from config directory
     private_key_object = AppPrivateKey.from_file(
