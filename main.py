@@ -17,9 +17,11 @@ from cryptlib.initialize import initialize_cryptbuddy
 from cryptlib.file_io import shred_file, write_chunks, config_dir
 
 db = keychain()
-app = typer.Typer()
-app.add_typer(chain.app, name="keychain")
-app.add_typer(symmetric.app, name="symmetric")
+app = typer.Typer(name="cryptbuddy",
+                  help="A CLI tool for encryption and decryption")
+app.add_typer(chain.app, name="keychain", help="Manage your keychain")
+app.add_typer(symmetric.app, name="symmetric",
+              help="Encrypt and decrypt files symmetrically")
 
 
 @app.command()
