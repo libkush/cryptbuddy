@@ -1,8 +1,9 @@
 from pathlib import Path
-from cryptlib.file_io import *
+
+from cryptbuddy.cryptlib.file_io import *
+from cryptbuddy.cryptlib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
+from cryptbuddy.cryptlib.keychain import keychain
 from nacl.public import PrivateKey
-from cryptlib.keychain import keychain
-from cryptlib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
 
 
 def initialize_cryptbuddy(name: str, email: str, password: str):

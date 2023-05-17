@@ -1,6 +1,7 @@
 from pathlib import Path
+
+from cryptbuddy.cryptlib.constants import *
 from nacl import secret, utils
-from cryptlib.constants import *
 from nacl.bindings import sodium_increment
 
 

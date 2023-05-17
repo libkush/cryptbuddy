@@ -1,5 +1,6 @@
 from typing import List
-from nacl import secret, pwhash
+
+from nacl import pwhash, secret
 
 """
 Cryptographic constants required by cryptbuddy

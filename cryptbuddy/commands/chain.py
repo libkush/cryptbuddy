@@ -1,11 +1,11 @@
-import typer
 from pathlib import Path
 from typing import Optional
-from cryptlib.utils import *
-from cryptlib.keychain import keychain
-from typing_extensions import Annotated
-from cryptlib.key_io import AppPublicKey
 
+import typer
+from cryptbuddy.cryptlib.key_io import AppPublicKey
+from cryptbuddy.cryptlib.keychain import keychain
+from cryptbuddy.cryptlib.utils import *
+from typing_extensions import Annotated
 
 app = typer.Typer()
 chain = keychain()

@@ -1,12 +1,13 @@
-import typer
-from cryptlib.utils import *
 from pathlib import Path
 from typing import Optional
-from typing_extensions import Annotated
+
+import typer
+from cryptbuddy.cryptlib.file_io import shred_file, write_chunks
+from cryptbuddy.cryptlib.symmetric.decrypt import symmetric_decrypt
+from cryptbuddy.cryptlib.symmetric.encrypt import symmetric_encrypt
+from cryptbuddy.cryptlib.utils import *
 from password_strength import PasswordStats
-from cryptlib.file_io import shred_file, write_chunks
-from cryptlib.symmetric.encrypt import symmetric_encrypt
-from cryptlib.symmetric.decrypt import symmetric_decrypt
+from typing_extensions import Annotated
 
 app = typer.Typer()
 

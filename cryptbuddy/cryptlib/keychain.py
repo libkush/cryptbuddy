@@ -1,8 +1,9 @@
 import sqlite3
-from cryptlib.file_io import *
 
+from cryptbuddy.cryptlib.file_io import *
 
 create_directories()
+
 
 class keychain:
     """

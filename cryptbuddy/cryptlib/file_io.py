@@ -1,6 +1,7 @@
 from pathlib import Path
+
+from appdirs import user_cache_dir, user_config_dir, user_data_dir
 from nacl.utils import random
-from appdirs import user_cache_dir, user_data_dir, user_config_dir
 
 
 def shred_file(path: Path):

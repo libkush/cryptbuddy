@@ -1,20 +1,21 @@
-import chain
-import typer
-import symmetric
 from pathlib import Path
 from shutil import copyfile
-from cryptlib.utils import *
-from cryptlib.constants import *
 from typing import List, Optional
-from cryptlib.keychain import keychain
-from typing_extensions import Annotated
-from cryptlib.key_io import AppPrivateKey
-from password_strength import PasswordStats
-from cryptlib.decrypt import asymmetric_decrypt
-from cryptlib.encrypt import asymmetric_encrypt
-from cryptlib.initialize import initialize_cryptbuddy
-from cryptlib.file_io import shred_file, write_chunks, config_dir
 
+import typer
+from password_strength import PasswordStats
+from typing_extensions import Annotated
+
+import cryptbuddy.commands.chain as chain
+import cryptbuddy.commands.symmetric as symmetric
+from cryptbuddy.cryptlib.constants import *
+from cryptbuddy.cryptlib.decrypt import asymmetric_decrypt
+from cryptbuddy.cryptlib.encrypt import asymmetric_encrypt
+from cryptbuddy.cryptlib.file_io import config_dir, shred_file, write_chunks
+from cryptbuddy.cryptlib.initialize import initialize_cryptbuddy
+from cryptbuddy.cryptlib.key_io import AppPrivateKey
+from cryptbuddy.cryptlib.keychain import keychain
+from cryptbuddy.cryptlib.utils import *
 
 db = keychain()
 app = typer.Typer(name="cryptbuddy",
