@@ -91,7 +91,7 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
     except Exception as e:
         error(e)
 
-    write_chunks(chunks, Path(f"{file}.enc"))
+    write_chunks(chunks, Path(f"{file}.crypt"))
     success("File encrypted successfully")
 
 
@@ -121,7 +121,12 @@ def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt
     except Exception as e:
         error(e)
 
-    write_chunks(chunks, Path(str(file)+".dec"))
+    # Write the decrypted chunks to a file
+    if file.suffix == ".crypt":
+        write_chunks(chunks, file.stem)
+    else:
+        write_chunks(chunks, Path(f"{file}.dec"))
+
     success("File decrypted successfully")
 
 

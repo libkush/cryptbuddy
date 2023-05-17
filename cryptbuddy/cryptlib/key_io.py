@@ -121,7 +121,7 @@ class AppPrivateKey(BaseKey):
         """
 
         # Write the encrypted chunks to a temporary file
-        temp_file = Path(f"{cache_dir}/private.key.enc")
+        temp_file = Path(f"{cache_dir}/private.key.crypt")
         write_chunks(self.chunks, temp_file)
 
         # Decrypt the chunks

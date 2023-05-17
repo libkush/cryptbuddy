@@ -35,7 +35,7 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
     # Encrypt file symmetrically
     try:
         chunks = symmetric_encrypt(file, password=password)
-        encrypted_path = Path(f"{file}.enc")
+        encrypted_path = Path(f"{file}.crypt")
         write_chunks(chunks, encrypted_path)
     except Exception as e:
         error(e)
@@ -64,7 +64,10 @@ def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt
     # Decrypt file symmetrically
     try:
         chunks = symmetric_decrypt(file, password)
-        decrypted_path = Path(f"{file}.dec")
+        if file.suffix == ".crypt":
+            decrypted_path = Path(file.stem)
+        else:
+            decrypted_path = Path(f"{file}.dec")
         write_chunks(chunks, decrypted_path)
     except Exception as e:
         error(e)
