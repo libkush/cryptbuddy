@@ -99,7 +99,7 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
             password: Annotated[
             str, typer.Option(
-                prompt=True, confirmation_prompt=True, hide_input=True, help="Password to decrypt your private key")
+                prompt=True, hide_input=True, help="Password to decrypt your private key")
             ],):
     """
     Decrypt a file using your private key

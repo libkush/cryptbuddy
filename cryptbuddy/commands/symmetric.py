@@ -50,7 +50,7 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
             password: Annotated[
             str, typer.Option(
-                prompt=True, confirmation_prompt=True, hide_input=True, help="Password to decrypt the file")
+                prompt=True, hide_input=True, help="Password to decrypt the file")
             ],
             shred: Annotated[Optional[bool], typer.Option(help="Shred the encrypted file after decryption")] = False):
     """
