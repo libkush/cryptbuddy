@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cryptbuddy"
-version = "0.1.0"
+version = "0.0.1"
 description = ""
 authors = ["Kush Patel <kush@kush.in>"]
 readme = "README.md"
