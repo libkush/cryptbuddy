@@ -13,19 +13,20 @@ app = typer.Typer()
 
 
 @app.command()
-def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt")],
-            password: Annotated[
-            str, typer.Option(
-                prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt the file")
-            ],
-            shred: Annotated[Optional[bool], typer.Option(help="Shred the original file after encryption")] = False):
+def encrypt(path: Annotated[Path, typer.Option(
+    help="Path of the file to encrypt",
+    exists=True,
+    readable=True,
+    resolve_path=True
+)],
+    password: Annotated[
+    str, typer.Option(
+        prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt the file")
+],
+        shred: Annotated[Optional[bool], typer.Option(help="Shred the original file after encryption")] = False):
     """
     Encrypt a file using a password
     """
-
-    # Check if file exists
-    if not file.exists():
-        error("File not found")
 
     # Check password strength
     stats = PasswordStats(password).strength()
@@ -34,8 +35,8 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 
     # Encrypt file symmetrically
     try:
-        chunks = symmetric_encrypt(file, password=password)
-        encrypted_path = Path(f"{file}.crypt")
+        chunks = symmetric_encrypt(path, password=password)
+        encrypted_path = Path(f"{path}.crypt")
         write_chunks(chunks, encrypted_path)
     except Exception as e:
         error(e)
@@ -43,31 +44,31 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 
     # Shred file if specified
     if shred:
-        shred_file(file)
+        shred_file(path)
 
 
 @app.command()
-def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
-            password: Annotated[
-            str, typer.Option(
-                prompt=True, hide_input=True, help="Password to decrypt the file")
-            ],
-            shred: Annotated[Optional[bool], typer.Option(help="Shred the encrypted file after decryption")] = False):
+def decrypt(path: Annotated[Path, typer.Option(
+    help="Path of the file to decrypt",
+    exists=True,
+    readable=True,
+    resolve_path=True)],
+    password: Annotated[
+    str, typer.Option(
+        prompt=True, hide_input=True, help="Password to decrypt the file")
+],
+        shred: Annotated[Optional[bool], typer.Option(help="Shred the encrypted file after decryption")] = False):
     """
     Decrypt a file using a password
     """
 
-    # Check if file exists
-    if not file.exists():
-        error("File not found")
-
     # Decrypt file symmetrically
     try:
-        chunks = symmetric_decrypt(file, password)
-        if file.suffix == ".crypt":
-            decrypted_path = Path(file.stem)
+        chunks = symmetric_decrypt(path, password)
+        if path.suffix == ".crypt":
+            decrypted_path = Path(path.stem)
         else:
-            decrypted_path = Path(f"{file}.dec")
+            decrypted_path = Path(f"{path}.dec")
         write_chunks(chunks, decrypted_path)
     except Exception as e:
         error(e)
@@ -75,7 +76,7 @@ def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt
 
     # Shred file if specified
     if shred:
-        shred_file(file)
+        shred_file(path)
 
 
 if __name__ == "__main__":

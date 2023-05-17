@@ -47,12 +47,17 @@ def init(name: Annotated[str, typer.Option(help="Username")],
 
 
 @app.command()
-def shred(file: Annotated[Path, typer.Option(help="Path of the file to shred")]):
+def shred(path: Annotated[Path, typer.Option(help="Path of the file to shred")]):
     """
     Shred a file such that it cannot be recovered
     """
-    if not file.exists():
-        error("File not found")
+
+    if path.is_dir():
+        # Shred the directory
+        for file in path.iterdir():
+            shred_file(file)
+        success("Directory shredded successfully")
+        return
 
     # Shred the file
     shred_file(file)
@@ -77,8 +82,13 @@ def export(dir: Annotated[Path, typer.Option(help="Directory to copy the public 
 
 
 @app.command()
-def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt")],
-            user: Annotated[Optional[List[str]], typer.Option()] = None,):
+def encrypt(path: Annotated[Path, typer.Option(
+    help="Path of the file to encrypt",
+    exists=True,
+    readable=True,
+    resolve_path=True
+)],
+        user: Annotated[Optional[List[str]], typer.Option()] = None,):
     """
     Encrypt a file for one or more users in your keychain
     """
@@ -87,26 +97,29 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 
     # Encrypt the file
     try:
-        chunks = asymmetric_encrypt(user, file)
+        chunks = asymmetric_encrypt(user, path)
     except Exception as e:
         error(e)
 
-    write_chunks(chunks, Path(f"{file}.crypt"))
+    write_chunks(chunks, Path(f"{path}.crypt"))
     success("File encrypted successfully")
 
 
 @app.command()
-def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
-            password: Annotated[
-            str, typer.Option(
-                prompt=True, hide_input=True, help="Password to decrypt your private key")
-            ],):
+def decrypt(path: Annotated[Path, typer.Option(
+    help="Path of the file to decrypt",
+    exists=True,
+    readable=True,
+    resolve_path=True)],
+
+    password: Annotated[
+        str, typer.Option(
+        prompt=True, hide_input=True, help="Password to decrypt your private key")]
+):
     """
     Decrypt a file using your private key
     """
 
-    if not file.exists():
-        error("File not found")
     private_key_path = Path(f"{config_dir}/private.key")
     if not private_key_path.exists():
         error("Private key not found")
@@ -117,15 +130,15 @@ def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt
 
     # Decrypt the file
     try:
-        chunks = asymmetric_decrypt(file, password, private_key_object)
+        chunks = asymmetric_decrypt(path, password, private_key_object)
     except Exception as e:
         error(e)
 
     # Write the decrypted chunks to a file
-    if file.suffix == ".crypt":
-        write_chunks(chunks, file.stem)
+    if path.suffix == ".crypt":
+        write_chunks(chunks, path.stem)
     else:
-        write_chunks(chunks, Path(f"{file}.dec"))
+        write_chunks(chunks, Path(f"{path}.dec"))
 
     success("File decrypted successfully")
 
