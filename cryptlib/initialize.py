@@ -1,21 +1,23 @@
 from pathlib import Path
-from nacl.public import PrivateKey
 from cryptlib.file_io import *
-from cryptlib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
+from nacl.public import PrivateKey
 from cryptlib.keychain import keychain
+from cryptlib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
 
 
 def initialize_cryptbuddy(name: str, email: str, password: str):
     """
-    Initializes CryptBuddy
+    Initializes CryptBuddy using the name, email and password
+    provided. The keypair is generated using NaCl and saved
+    to the config directory. The public key is added to the
+    keychain.
     """
 
     # Create user directories if they don't exist
     create_directories()
 
     # Keypair will be stored in config directory
-    dir = config_dir
-    print("Keys will be stored at: ", dir)
+    print("Keys will be stored at: ", config_dir)
     print("Keychain is at: ", data_dir)
     print("Cache is at: ", cache_dir)
 
@@ -24,9 +26,9 @@ def initialize_cryptbuddy(name: str, email: str, password: str):
         raise TypeError("Invalid argument types")
 
     # Check if keys already exist
-    if Path(f"{dir}/private.key").exists():
+    if Path(f"{config_dir}/private.key").exists():
         raise FileExistsError("Private key already exists")
-    if Path(f"{dir}/public.key").exists():
+    if Path(f"{config_dir}/public.key").exists():
         raise FileExistsError("Public key already exists")
 
     # Generate keypair using NaCl
@@ -36,12 +38,12 @@ def initialize_cryptbuddy(name: str, email: str, password: str):
     # Create keypair objects
     meta = KeyMeta(name, email)
     private_key = AppPrivateKey.from_original_key(
-        meta, private_key_generated.encode(), password)
+        meta, private_key_generated, password)
     public_key = AppPublicKey(meta, public_key_generated.encode())
 
     # Save keys to files
-    private_key.save(Path(f"{dir}/private.key"))
-    public_key.save(Path(f"{dir}/public.key"))
+    private_key.save(Path(f"{config_dir}/private.key"))
+    public_key.save(Path(f"{config_dir}/public.key"))
 
     # Initialize and add public key to keychain
     chain = keychain()

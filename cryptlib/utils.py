@@ -28,6 +28,9 @@ def error(msg: str):
 
 
 def print_table(records, table_data):
+    """
+    Print a table
+    """
     for record in records:
         table_data.append(list(record))
     table = tabulate(table_data, headers="firstrow", tablefmt="fancy_grid")

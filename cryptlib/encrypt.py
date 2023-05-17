@@ -1,35 +1,57 @@
-from pathlib import Path
-from cryptlib.keychain import keychain
-from cryptlib.key_io import AppPublicKey, AppPrivateKey
 from nacl import utils
+from pathlib import Path
+from msgpack import dumps
 from cryptlib.constants import *
+from cryptlib.keychain import keychain
+from cryptlib.key_io import AppPublicKey
 from nacl.public import PublicKey, SealedBox
 from cryptlib.symmetric.encrypt import symmetric_encrypt
-from cryptlib.symmetric.decrypt import symmetric_decrypt
-from msgpack import dumps, loads
 
 
 def asymmetric_encrypt(user: list, file: Path):
+    """
+    Returns asymmetrically encrypted chunks. `user` is a list of 
+    usernames whose public keys will be used to encrypt the file. 
+    `file` is the file to be encrypted.
+    """
+
+    # Initialize the keychain
     db = keychain()
+
+    # Get the public keys of the users from the keychain
     public_keys_packed = []
     for u in user:
         public_keys_packed.append(db.get_key(name=u))
     if len(public_keys_packed) == 0:
         raise Exception("No public keys found")
+
+    # Deserialize the public keys
     public_keys = {}
     for key in public_keys_packed:
         unpacked_key = AppPublicKey.from_packed(key)
         public_keys[unpacked_key.meta.name] = unpacked_key
+
+    # Generate a random symmetric key
     symmetric_key = utils.random(keysize)
+
+    # Encrypt the symmetric key with all the public keys
+    # and store them in a dictionary with the name of the
+    # user with the key
     encrypted_symmetric_keys = {}
     for name, public_key in public_keys.items():
         public_key_object = PublicKey(public_key.key)
         sealed_box = SealedBox(public_key_object)
         encrypted = sealed_box.encrypt(symmetric_key)
         encrypted_symmetric_keys[name] = encrypted
+
+    # Encrypt the file symmetrically with the symmetric key
     chunks = symmetric_encrypt(file, key=symmetric_key)
-    del symmetric_key, public_keys, public_keys_packed, public_key_object, sealed_box, encrypted
+
+    # Serialize the encrypted symmetric keys and prepend it
+    # using a newline
     packed_keys = dumps(encrypted_symmetric_keys)
     chunks.insert(0, b'\n')
     chunks.insert(0, packed_keys)
+
+    # Return the encrypted chunks
     return chunks

@@ -6,9 +6,13 @@ from pathlib import Path
 
 def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> bytelist:
     """
-    Decrypts a file with a password and returns the decrypted chunks
+    Returns the decrypted chunks after symmetrically decrypting the file.
+    `file` is the file to be decrypted. `password` is the password to be
+    used to retrieve the key. `key` is the key to be used to decrypt the
+    file. Either `password` or `key` must be provided.
     """
 
+    # Check if the file exists and if the password or key is provided
     if not file.exists():
         raise FileNotFoundError("File does not exist")
     if not password and not key:
@@ -25,14 +29,16 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> by
         ops = int(encodedOps.decode(encoding='UTF-8'))
         mem = int(encodedMem.decode(encoding='UTF-8'))
 
+        # Generate the key from the password if not already provided
         if not key:
-            # Generate the key from the password
             key = kdf(keysize, password.encode(),
                       salt, opslimit=ops, memlimit=mem)
+
+        # Create the box
         box = secret.SecretBox(key)
         _newline = infile.read(1)
 
-        # Decrypt the file data in chunks
+        # Decrypt the file data in chunks of given size
         while 1:
             rchunk = infile.read(chunksize + macsize)
             if len(rchunk) == 0:

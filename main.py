@@ -1,23 +1,20 @@
+import chain
+import typer
+import symmetric
+from pathlib import Path
+from shutil import copyfile
+from pwinput import pwinput
+from cryptlib.utils import *
+from cryptlib.constants import *
+from typing import List, Optional
+from cryptlib.keychain import keychain
+from typing_extensions import Annotated
+from cryptlib.key_io import AppPrivateKey
+from password_strength import PasswordStats
 from cryptlib.decrypt import asymmetric_decrypt
 from cryptlib.encrypt import asymmetric_encrypt
 from cryptlib.initialize import initialize_cryptbuddy
-from cryptlib.file_io import shred_file, config_dir, write_chunks, cache_dir
-from password_strength import PasswordStats
-from cryptlib.key_io import AppPrivateKey
-from typing_extensions import Annotated
-from cryptlib.keychain import keychain
-from cryptlib.constants import *
-from shutil import copyfile
-from pwinput import pwinput
-import typer
-import chain
-from cryptlib.symmetric.decrypt import symmetric_decrypt
-import symmetric
-from cryptlib.utils import *
-from pathlib import Path
-from nacl.public import PrivateKey, SealedBox
-from typing import List, Optional
-from msgpack import loads
+from cryptlib.file_io import shred_file, write_chunks, config_dir
 
 db = keychain()
 app = typer.Typer()
@@ -52,10 +49,12 @@ def init(name: Annotated[str, typer.Option(help="Username")],
 @app.command()
 def shred(file: Annotated[Path, typer.Option(help="Path of the file to shred")]):
     """
-    Shred a file
+    Shred a file such that it cannot be recovered
     """
     if not file.exists():
         error("File not found")
+
+    # Shred the file
     shred_file(file)
     success("File shredded successfully")
 
@@ -85,10 +84,13 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
     """
     if len(user) == 0:
         error("No users specified")
+
+    # Encrypt the file
     try:
         chunks = asymmetric_encrypt(user, file)
     except Exception as e:
         error(e)
+
     write_chunks(chunks, Path(f"{file}.enc"))
     success("File encrypted successfully")
 
@@ -97,7 +99,7 @@ def encrypt(file: Annotated[Path, typer.Option(help="Path of the file to encrypt
 def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt")],
             password: Annotated[Optional[str], typer.Option(help="Password for decrypting private key")] = None):
     """
-    Decrypt a file
+    Decrypt a file using your private key
     """
     if not file.exists():
         error("File not found")
@@ -106,13 +108,17 @@ def decrypt(file: Annotated[Path, typer.Option(help="Path of the file to decrypt
         error("Private key not found")
     if not password:
         password = pwinput("Enter password: ")
+
+    # Get your private key object from config directory
     private_key_object = AppPrivateKey.from_file(
         private_key_path)
 
+    # Decrypt the file
     try:
         chunks = asymmetric_decrypt(file, password, private_key_object)
     except Exception as e:
         error(e)
+
     write_chunks(chunks, Path(str(file)+".dec"))
     success("File decrypted successfully")
 

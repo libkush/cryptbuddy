@@ -4,8 +4,9 @@ from cryptlib.file_io import *
 
 class keychain:
     """
-    A class that manages the keychain database. The keychain database 
-    stores public keys of other users
+    Manages the keychain. Keychain is a SQLite database 
+    that stores the (name, public key) records in the 
+    keys table.
     """
 
     def __init__(self):
@@ -24,6 +25,7 @@ class keychain:
         c.execute(create_query)
         conn.commit()
 
+        # Set the connection and cursor attributes
         self.conn = conn
         self.c = c
 
@@ -31,13 +33,14 @@ class keychain:
         """
         Adds a public key to the database
         """
+
         self.c.execute("INSERT INTO keys (name, key) VALUES (?, ?)",
                        (name, key))
         self.conn.commit()
 
     def get_key(self, name: str = None, id: int = None):
         """
-        Gets a public key from the database
+        Gets a public key from the database using name or ID
         """
 
         # Check if the user specified a name or id
@@ -53,15 +56,16 @@ class keychain:
 
     def get_names(self):
         """
-        Gets all the names of the users whose public keys
-        are saved in the database
+        Gets all the names along with their IDs of the 
+        users whose public keys are saved in the database
         """
+
         self.c.execute("SELECT id, name FROM keys")
         return self.c.fetchall()
 
     def delete_key(self, name: str = None, id: int = None):
         """
-        Deletes a public key from the database
+        Deletes a public key from the database using name or ID
         """
 
         # Check if the user specified a name or id

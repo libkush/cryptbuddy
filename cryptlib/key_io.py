@@ -1,25 +1,39 @@
 from pathlib import Path
-from msgpack import dumps, loads
 from cryptlib.file_io import *
-from cryptlib.symmetric.decrypt import symmetric_decrypt
+from msgpack import dumps, loads
+from nacl.public import PrivateKey
 from cryptlib.symmetric.encrypt import symmetric_encrypt
+from cryptlib.symmetric.decrypt import symmetric_decrypt
 
 
-# The key metadata object
 class KeyMeta:
+    """
+    The metadata of a key .i.e., name and email
+    of the bearer
+    """
+
     def __init__(self, name: str, email: str):
         self.name = name
         self.email = email
 
 
-# The base key object
 class BaseKey:
+    """
+    The base key object
+    """
+
     def __init__(self, meta: KeyMeta):
         self.meta = meta
 
 
-# The private key object
 class AppPrivateKey(BaseKey):
+    """
+    The private key object. `chunks` contain the encrypted key 
+    chunks. `data` has the metadata as well as the encrypted
+    key chunks. `packed` is the serialized `data` that can be 
+    saved to a binary file. 
+    """
+
     def __init__(self, meta: KeyMeta, chunks: list):
         super().__init__(meta)
 
@@ -44,22 +58,23 @@ class AppPrivateKey(BaseKey):
     # Saves the packed data
     def save(self, path: Path):
         """
-        Saves the packed key to a file
+        Saves the serialized key to specified file
         """
+
         if path.exists():
             raise FileExistsError("File already exists")
         with open(path, "wb") as file:
             file.write(self.packed)
 
     @classmethod
-    def from_original_key(cls, meta: KeyMeta, key: bytes, password: str) -> "AppPrivateKey":
+    def from_original_key(cls, meta: KeyMeta, key: PrivateKey, password: str) -> "AppPrivateKey":
         """
         Creates a private key object from an NaCl private key
         """
 
         # Write the key to a temporary file
         temp_file = Path(f"{cache_dir}/private.key")
-        write_bytes(key, temp_file)
+        write_bytes(key.encode(), temp_file)
 
         # Encrypt the key and get the chunks
         chunks = symmetric_encrypt(temp_file, password=password)
@@ -72,8 +87,10 @@ class AppPrivateKey(BaseKey):
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPrivateKey":
         """
-        Creates a private key object from packed data
+        Creates a private key object from serialized data
         """
+
+        # Deserialize the data
         data = loads(packed)
         meta = KeyMeta(data["name"], data["email"])
 
@@ -83,10 +100,10 @@ class AppPrivateKey(BaseKey):
     @classmethod
     def from_file(cls, file: Path) -> "AppPrivateKey":
         """
-        Gets a private key object from a file
+        Gets a private key object from a binary key file
         """
 
-        # Check if file exists
+        # Check if the file exists
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")
 
@@ -94,11 +111,12 @@ class AppPrivateKey(BaseKey):
         with open(file, "rb") as file:
             encoded_bytes = file.read()
 
+        # Return the private key object from serialized data
         return AppPrivateKey.from_packed(encoded_bytes)
 
     def decrypted_key_chunks(self, password: str):
         """
-        Returns the decrypted key chunks
+        Returns the decrypted key chunks (list of bytes)
         """
 
         # Write the encrypted chunks to a temporary file
@@ -112,18 +130,24 @@ class AppPrivateKey(BaseKey):
 
     def decrypted_key(self, password: str):
         """
-        Returns the decrypted key
+        Returns the NaCl private key object by 
+        decrypting the key chunks
         """
 
         # Get the decrypted key chunks
         chunks = self.decrypted_key_chunks(password)
 
         # Join the chunks and return the key
-        return b"".join(chunks)
+        return PrivateKey(b"".join(chunks))
 
 
-# The public key object
 class AppPublicKey(BaseKey):
+    """
+    The public key object. `key` is the NaCl public key and
+    `data` has the metadata as well as the key. `packed` is
+    the serialized `data` that can be saved to a binary file.
+    """
+
     def __init__(self, meta: KeyMeta, key: bytes):
         super().__init__(meta)
 
@@ -145,18 +169,19 @@ class AppPublicKey(BaseKey):
     def __str__(self):
         return f"<PublicKey {self.meta.name} {self.meta.email}>"
 
-    # Saves the packed data
-    def save(self, path: Path):
-        if path.exists():
+    # Saves the serialized data to a file
+    def save(self, file: Path):
+        if file.exists():
             raise FileExistsError("File already exists")
-        with open(path, "wb") as file:
+        with open(file, "wb") as file:
             file.write(self.packed)
 
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPublicKey":
         """
-        Creates a public key object from packed data
+        Creates a public key object from serialized data
         """
+
         data = loads(packed)
         meta = KeyMeta(data["name"], data["email"])
 
@@ -166,7 +191,7 @@ class AppPublicKey(BaseKey):
     @classmethod
     def from_file(cls, file: Path) -> "AppPublicKey":
         """
-        Gets a public key object from a file
+        Gets a public key object from a binary key file
         """
 
         # Check if file exists
@@ -177,4 +202,5 @@ class AppPublicKey(BaseKey):
         with open(file, "rb") as file:
             encoded_bytes = file.read()
 
+        # Return the public key object from serialized data
         return AppPublicKey.from_packed(encoded_bytes)
