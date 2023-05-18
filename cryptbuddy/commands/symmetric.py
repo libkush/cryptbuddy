@@ -37,16 +37,16 @@ def encrypt(path: Annotated[Path, typer.Argument(
     if path.is_dir():
         # Encrypt all files in directory
         for file in path.iterdir():
-            file = Path(file).absolute()
-            try:
-                chunks = symmetric_encrypt(file, password=password)
-                encrypted_path = file.with_suffix(".crypt")
-                write_chunks(chunks, encrypted_path)
-            except Exception as e:
-                error(e)
-            # Shred original file if specified
-            if shred:
-                shred_file(file)
+            if file.is_file():
+                try:
+                    chunks = symmetric_encrypt(file, password=password)
+                    encrypted_path = file.with_suffix(".crypt")
+                    write_chunks(chunks, encrypted_path)
+                except Exception as e:
+                    error(e)
+                # Shred original file if specified
+                if shred:
+                    shred_file(file)
         success("All files in directory encrypted successfully")
         return
 
@@ -83,20 +83,20 @@ def decrypt(path: Annotated[Path, typer.Argument(
     if path.is_dir():
         # Decrypt all files in directory
         for file in path.iterdir():
-            file = Path(file).absolute()
-            try:
-                chunks = symmetric_decrypt(file, password)
-                if file.suffix == ".crypt":
-                    decrypted_path = file.with_suffix("")
-                    print(decrypted_path)
-                else:
-                    decrypted_path = file.with_suffix(".dec")
-                write_chunks(chunks, decrypted_path)
-            except Exception as e:
-                error(e)
-            # Shred original file if specified
-            if shred:
-                shred_file(file)
+            if file.is_file():
+                try:
+                    chunks = symmetric_decrypt(file, password)
+                    if file.suffix == ".crypt":
+                        decrypted_path = file.with_suffix("")
+                        print(decrypted_path)
+                    else:
+                        decrypted_path = file.with_suffix(".dec")
+                    write_chunks(chunks, decrypted_path)
+                except Exception as e:
+                    error(e)
+                # Shred original file if specified
+                if shred:
+                    shred_file(file)
         success("All files in directory decrypted successfully")
         return
 

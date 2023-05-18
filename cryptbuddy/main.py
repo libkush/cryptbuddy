@@ -60,7 +60,8 @@ def shred(path: Annotated[Path, typer.Argument(
     if path.is_dir():
         # Shred the directory
         for file in path.iterdir():
-            shred_file(file)
+            if file.is_file():
+                shred_file(file)
         path.rmdir()
         success("Directory shredded successfully")
         return
@@ -109,12 +110,12 @@ def encrypt(path: Annotated[Path, typer.Argument(
     if path.is_dir():
         # Encrypt the directory
         for file in path.iterdir():
-            try:
-                chunks = asymmetric_encrypt(user, file)
-            except Exception as e:
-                error(e)
-
-            write_chunks(chunks, file.with_suffix(".crypt"))
+            if file.is_file():
+                try:
+                    chunks = asymmetric_encrypt(user, file)
+                except Exception as e:
+                    error(e)
+                write_chunks(chunks, file.with_suffix(".crypt"))
         success("All files in the directory encrypted successfully")
         return
 
@@ -155,15 +156,17 @@ def decrypt(path: Annotated[Path, typer.Argument(
     if path.is_dir():
         # Decrypt the directory
         for file in path.iterdir():
-            try:
-                chunks = asymmetric_decrypt(file, password, private_key_object)
-            except Exception as e:
-                error(e)
+            if file.is_file():
+                try:
+                    chunks = asymmetric_decrypt(
+                        file, password, private_key_object)
+                except Exception as e:
+                    error(e)
 
-            if file.suffix == ".crypt":
-                write_chunks(chunks, file.with_suffix(""))
-            else:
-                write_chunks(chunks, file.with_suffix(".dec"))
+                if file.suffix == ".crypt":
+                    write_chunks(chunks, file.with_suffix(""))
+                else:
+                    write_chunks(chunks, file.with_suffix(".dec"))
         success("All files in the directory decrypted successfully")
         return
 
