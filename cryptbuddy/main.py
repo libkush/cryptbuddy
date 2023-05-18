@@ -47,7 +47,7 @@ def init(name: Annotated[str, typer.Option(help="Username")],
 
 
 @app.command()
-def shred(path: Annotated[Path, typer.Option(
+def shred(path: Annotated[Path, typer.Argument(
     help="Path of the file to be shredded",
     exists=True,
     readable=True,
@@ -61,6 +61,7 @@ def shred(path: Annotated[Path, typer.Option(
         # Shred the directory
         for file in path.iterdir():
             shred_file(file)
+        path.rmdir()
         success("Directory shredded successfully")
         return
 
@@ -70,7 +71,7 @@ def shred(path: Annotated[Path, typer.Option(
 
 
 @app.command()
-def export(dir: Annotated[Path, typer.Option(
+def export(dir: Annotated[Path, typer.Argument(
     help="Directory to export the public key to",
     exists=True,
     writable=True,
@@ -91,7 +92,7 @@ def export(dir: Annotated[Path, typer.Option(
 
 
 @app.command()
-def encrypt(path: Annotated[Path, typer.Option(
+def encrypt(path: Annotated[Path, typer.Argument(
     help="Path of the file to encrypt",
     exists=True,
     readable=True,
@@ -128,7 +129,7 @@ def encrypt(path: Annotated[Path, typer.Option(
 
 
 @app.command()
-def decrypt(path: Annotated[Path, typer.Option(
+def decrypt(path: Annotated[Path, typer.Argument(
     help="Path of the file to decrypt",
     exists=True,
     readable=True,

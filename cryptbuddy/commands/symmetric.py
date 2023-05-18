@@ -13,7 +13,7 @@ app = typer.Typer()
 
 
 @app.command()
-def encrypt(path: Annotated[Path, typer.Option(
+def encrypt(path: Annotated[Path, typer.Argument(
     help="Path of the file/decrypt to encrypt",
     exists=True,
     readable=True,
@@ -65,7 +65,7 @@ def encrypt(path: Annotated[Path, typer.Option(
 
 
 @app.command()
-def decrypt(path: Annotated[Path, typer.Option(
+def decrypt(path: Annotated[Path, typer.Argument(
     help="Path of the file to decrypt",
     exists=True,
     readable=True,
@@ -94,6 +94,9 @@ def decrypt(path: Annotated[Path, typer.Option(
                 write_chunks(chunks, decrypted_path)
             except Exception as e:
                 error(e)
+            # Shred original file if specified
+            if shred:
+                shred_file(file)
         success("All files in directory decrypted successfully")
         return
 

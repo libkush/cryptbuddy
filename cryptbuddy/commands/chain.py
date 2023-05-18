@@ -12,7 +12,7 @@ chain = keychain()
 
 
 @app.command()
-def add(key: Annotated[Path, typer.Option(help="Public key file path")]):
+def add(key: Annotated[Path, typer.Argument(help="Public key file path")]):
     """
     Add a key to your keychain
     """
@@ -28,7 +28,7 @@ def add(key: Annotated[Path, typer.Option(help="Public key file path")]):
 
 
 @app.command()
-def delete(name: Annotated[Optional[str], typer.Option(help="Name of the user whose public key to delete")] = None,
+def delete(name: Annotated[Optional[str], typer.Argument(help="Name of the user whose public key to delete")] = None,
            id: Annotated[Optional[int], typer.Option(help="ID of the public key to delete")] = None):
     """
     Delete a key from your keychain
