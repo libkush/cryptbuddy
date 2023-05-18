@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 from cryptbuddy.cryptlib.constants import *
 from cryptbuddy.cryptlib.key_io import AppPublicKey
@@ -9,7 +10,7 @@ from nacl import utils
 from nacl.public import PublicKey, SealedBox
 
 
-def asymmetric_encrypt(user: list, file: Path):
+def asymmetric_encrypt(user: List[str], file: Path):
     """
     Encrypts a file using asymmetric encryption for multiple users.
 
