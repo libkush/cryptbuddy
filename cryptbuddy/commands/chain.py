@@ -12,12 +12,10 @@ chain = Keychain()
 
 
 @app.command()
-def add(key: Annotated[Path, typer.Argument(help="Public key file path")]):
+def add(key: Annotated[Path, typer.Argument(help="Public key file path", exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True)]):
     """
     Add a key to your keychain
     """
-    if not key.exists():
-        error("File not found")
 
     # Create the public key object from file
     public_key = AppPublicKey.from_file(key)
