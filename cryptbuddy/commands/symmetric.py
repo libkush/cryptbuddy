@@ -53,7 +53,7 @@ def encrypt(path: Annotated[Path, typer.Argument(
     # Encrypt file symmetrically
     try:
         chunks = symmetric_encrypt(path, password=password)
-        encrypted_path = file.with_suffix(".crypt")
+        encrypted_path = path.with_suffix(".crypt")
         write_chunks(chunks, encrypted_path)
     except Exception as e:
         error(e)
