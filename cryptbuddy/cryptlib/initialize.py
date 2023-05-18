@@ -2,16 +2,30 @@ from pathlib import Path
 
 from cryptbuddy.cryptlib.file_io import *
 from cryptbuddy.cryptlib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
-from cryptbuddy.cryptlib.keychain import keychain
+from cryptbuddy.cryptlib.keychain import Keychain
 from nacl.public import PrivateKey
 
 
 def initialize_cryptbuddy(name: str, email: str, password: str):
     """
-    Initializes CryptBuddy using the name, email and password
-    provided. The keypair is generated using NaCl and saved
-    to the config directory. The public key is added to the
-    keychain.
+    Initializes the CryptBuddy application by creating user directories and generating keypairs.
+
+    This function initializes the CryptBuddy application by creating the necessary user directories,
+    generating keypairs using NaCl, and saving the private and public keys to files. It also adds the
+    public key to the keychain for future use.
+
+    Args:
+        name (str): The name associated with the user.
+        email (str): The email address associated with the user.
+        password (str): The password used to encrypt the private key.
+
+    Raises:
+        TypeError: If any of the arguments are not of type str.
+        FileExistsError: If the private or public key files already exist.
+
+    Note:
+        The private key is saved to the config directory, while the public key is saved to the data directory.
+
     """
 
     # Create user directories if they don't exist
@@ -47,5 +61,5 @@ def initialize_cryptbuddy(name: str, email: str, password: str):
     public_key.save(Path(f"{config_dir}/public.key"))
 
     # Initialize and add public key to keychain
-    chain = keychain()
+    chain = Keychain()
     chain.add_key(name, public_key.packed)

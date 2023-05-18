@@ -4,7 +4,11 @@ from tabulate import tabulate
 
 def success(msg: str):
     """
-    Print a success message
+    Display a success message.
+
+    Args:
+        msg (str): The success message.
+
     """
     success = typer.style(f"SUCCESS: {msg}", fg=typer.colors.GREEN, bold=True)
     typer.echo(success)
@@ -12,7 +16,11 @@ def success(msg: str):
 
 def warning(msg: str):
     """
-    Print a warning message
+    Display a warning message.
+
+    Args:
+        msg (str): The warning message.
+
     """
     warning = typer.style(f"WARNING: {msg}", fg=typer.colors.YELLOW, bold=True)
     typer.echo(warning)
@@ -20,7 +28,11 @@ def warning(msg: str):
 
 def error(msg: str):
     """
-    Print an error message
+    Display an error message and raise a typer.Exit exception.
+
+    Args:
+        msg (str): The error message.
+
     """
     error = typer.style(f"ERROR: {msg}", fg=typer.colors.RED, bold=True)
     typer.echo(error)
@@ -29,9 +41,15 @@ def error(msg: str):
 
 def print_table(records, table_data):
     """
-    Print a table
+    Print tabular data in a formatted table.
+
+    Args:
+        records: The records to be displayed in the table.
+        table_data: The data structure containing the table data.
+
     """
     for record in records:
         table_data.append(list(record))
+
     table = tabulate(table_data, headers="firstrow", tablefmt="fancy_grid")
     typer.echo(table)

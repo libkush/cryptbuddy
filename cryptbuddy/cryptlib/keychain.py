@@ -5,16 +5,13 @@ from cryptbuddy.cryptlib.file_io import *
 create_directories()
 
 
-class keychain:
+class Keychain:
     """
-    Manages the keychain. Keychain is a SQLite database 
-    that stores the (name, public key) records in the 
-    keys table.
+    Represents a keychain that stores keys in an SQLite database.
     """
 
     def __init__(self):
-        conn = sqlite3.connect(
-            f"{data_dir}/keychain.db")
+        conn = sqlite3.connect(f"{data_dir}/keychain.db")
         c = conn.cursor()
 
         # Create the keys table if it doesn't exist
@@ -34,55 +31,83 @@ class keychain:
 
     def add_key(self, name: str, key: bytes):
         """
-        Adds a public key to the database
-        """
+        Add a key to the keychain.
 
-        self.c.execute("INSERT INTO keys (name, key) VALUES (?, ?)",
-                       (name, key))
+        Args:
+            name (str): The name associated with the key.
+            key (bytes): The key to be added.
+
+        """
+        self.c.execute(
+            "INSERT INTO keys (name, key) VALUES (?, ?)", (name, key))
         self.conn.commit()
 
     def get_key(self, name: str = None, id: int = None):
         """
-        Gets a public key from the database using name or ID
+        Retrieve a key from the keychain.
+
+        Args:
+            name (str): The name associated with the key.
+            id (int): The ID of the key.
+
+        Returns:
+            bytes: The retrieved key.
+
+        Raises:
+            ValueError: If neither name nor ID is specified.
+            TypeError: If the key with the specified name or ID does not exist.
+
         """
-
-        # Check if the user specified a name or id
         if not name and not id:
-            raise ValueError("Must specify name or id")
+            raise ValueError("Must specify name or ID")
 
-        # Get the key using id or name
         if id:
             self.c.execute("SELECT key FROM keys WHERE id = ?", (id,))
-            return self.c.fetchone()[0]
-        self.c.execute("SELECT key FROM keys WHERE name = ?", (name,))
-        return self.c.fetchone()[0]
+        else:
+            self.c.execute("SELECT key FROM keys WHERE name = ?", (name,))
+
+        result = self.c.fetchone()
+        if result is None:
+            raise TypeError("Key not found")
+
+        return result[0]
 
     def get_names(self):
         """
-        Gets all the names along with their IDs of the 
-        users whose public keys are saved in the database
-        """
+        Retrieve the names and IDs of all keys in the keychain.
 
+        Returns:
+            list: A list of tuples containing the ID and name of each key.
+
+        """
         self.c.execute("SELECT id, name FROM keys")
         return self.c.fetchall()
 
     def delete_key(self, name: str = None, id: int = None):
         """
-        Deletes a public key from the database using name or ID
+        Delete a key from the keychain.
+
+        Args:
+            name (str): The name associated with the key.
+            id (int): The ID of the key.
+
+        Raises:
+            ValueError: If neither name nor ID is specified.
+
         """
-
-        # Check if the user specified a name or id
         if not name and not id:
-            raise ValueError("Must specify name or id")
+            raise ValueError("Must specify name or ID")
 
-        # Delete the key using id or name
         if id:
             self.c.execute("DELETE FROM keys WHERE id = ?", (id,))
-        self.c.execute("DELETE FROM keys WHERE name = ?", (name,))
+        else:
+            self.c.execute("DELETE FROM keys WHERE name = ?", (name,))
+
         self.conn.commit()
 
     def close(self):
         """
-        Closes the database connection
+        Close the keychain connection.
+
         """
         self.conn.close()

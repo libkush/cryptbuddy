@@ -14,10 +14,10 @@ from cryptbuddy.cryptlib.encrypt import asymmetric_encrypt
 from cryptbuddy.cryptlib.file_io import config_dir, shred_file, write_chunks
 from cryptbuddy.cryptlib.initialize import initialize_cryptbuddy
 from cryptbuddy.cryptlib.key_io import AppPrivateKey
-from cryptbuddy.cryptlib.keychain import keychain
+from cryptbuddy.cryptlib.keychain import Keychain
 from cryptbuddy.cryptlib.utils import *
 
-db = keychain()
+db = Keychain()
 app = typer.Typer(name="cryptbuddy",
                   help="A CLI tool for encryption and decryption")
 app.add_typer(chain.app, name="keychain", help="Manage your keychain")

@@ -3,12 +3,12 @@ from typing import Optional
 
 import typer
 from cryptbuddy.cryptlib.key_io import AppPublicKey
-from cryptbuddy.cryptlib.keychain import keychain
+from cryptbuddy.cryptlib.keychain import Keychain
 from cryptbuddy.cryptlib.utils import *
 from typing_extensions import Annotated
 
 app = typer.Typer()
-chain = keychain()
+chain = Keychain()
 
 
 @app.command()

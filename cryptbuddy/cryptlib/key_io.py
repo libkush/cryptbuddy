@@ -8,9 +8,20 @@ from nacl.public import PrivateKey
 
 
 class KeyMeta:
-    """
-    The metadata of a key .i.e., name and email
-    of the bearer
+    """   
+    Represents metadata associated with a cryptographic key.
+
+    This class is used to store metadata information, such as the name and email address,
+    associated with a cryptographic key.
+
+    Args:
+        name (str): The name associated with the key.
+        email (str): The email address associated with the key.
+
+    Attributes:
+        name (str): The name associated with the key.
+        email (str): The email address associated with the key.
+
     """
 
     def __init__(self, name: str, email: str):
@@ -20,7 +31,17 @@ class KeyMeta:
 
 class BaseKey:
     """
-    The base key object
+    Represents a base cryptographic key.
+
+    This class serves as the base class for cryptographic key objects. It contains the
+    metadata associated with the key.
+
+    Args:
+        meta (KeyMeta): The metadata associated with the key.
+
+    Attributes:
+        meta (KeyMeta): The metadata associated with the key.
+
     """
 
     def __init__(self, meta: KeyMeta):
@@ -29,16 +50,25 @@ class BaseKey:
 
 class AppPrivateKey(BaseKey):
     """
-    The private key object. `chunks` contain the encrypted key 
-    chunks. `data` has the metadata as well as the encrypted
-    key chunks. `packed` is the serialized `data` that can be 
-    saved to a binary file. 
+    Represents an application-specific private key.
+
+    This class extends the `BaseKey` class and provides additional functionality specific
+    to private keys used in the application.
+
+    Args:
+        meta (KeyMeta): The metadata associated with the private key.
+        chunks (list): The encrypted key chunks.
+
+    Attributes:
+        meta (KeyMeta): The metadata associated with the private key.
+        chunks (list): The encrypted key chunks.
+        data (dict): The serialized data representation of the private key.
+        packed (bytes): The packed data representation of the private key.
+
     """
 
     def __init__(self, meta: KeyMeta, chunks: list):
         super().__init__(meta)
-
-        # The chunks are the encrypted key chunks
         self.chunks = chunks
         self.data = {
             "type": "private",
@@ -46,8 +76,6 @@ class AppPrivateKey(BaseKey):
             "email": meta.email,
             "chunks": chunks
         }
-
-        # The packed data is the data that will be saved to a file
         self.packed = dumps(self.data)
 
     def __repr__(self):
@@ -56,12 +84,17 @@ class AppPrivateKey(BaseKey):
     def __str__(self):
         return f"<PrivateKey {self.meta.name} {self.meta.email}>"
 
-    # Saves the packed data
     def save(self, path: Path):
         """
-        Saves the serialized key to specified file
-        """
+        Save the packed private key data to a file.
 
+        Args:
+            path (Path): The path to the file where the private key will be saved.
+
+        Raises:
+            FileExistsError: If the file already exists.
+
+        """
         if path.exists():
             raise FileExistsError("File already exists")
         with open(path, "wb") as file:
@@ -70,89 +103,112 @@ class AppPrivateKey(BaseKey):
     @classmethod
     def from_original_key(cls, meta: KeyMeta, key: PrivateKey, password: str) -> "AppPrivateKey":
         """
-        Creates a private key object from an NaCl private key
-        """
+        Create an `AppPrivateKey` object from an original private key.
 
-        # Write the key to a temporary file
+        Args:
+            meta (KeyMeta): The metadata associated with the private key.
+            key (PrivateKey): The original private key.
+            password (str): The password to encrypt the private key.
+
+        Returns:
+            AppPrivateKey: The created `AppPrivateKey` object.
+
+        """
         temp_file = Path(f"{cache_dir}/private.key")
         write_bytes(key.encode(), temp_file)
-
-        # Encrypt the key and get the chunks
         chunks = symmetric_encrypt(temp_file, password=password)
-
-        # Shred the temporary file
         shred_file(temp_file)
-
         return AppPrivateKey(meta, chunks)
 
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPrivateKey":
         """
-        Creates a private key object from serialized data
-        """
+        Create an `AppPrivateKey` object from packed data.
 
-        # Deserialize the data
+        Args:
+            packed (bytes): The packed data representing the private key.
+
+        Returns:
+            AppPrivateKey: The created `AppPrivateKey` object.
+
+        """
         data = loads(packed)
         meta = KeyMeta(data["name"], data["email"])
-
-        # Return the private key object
         return AppPrivateKey(meta, data["chunks"])
 
     @classmethod
     def from_file(cls, file: Path) -> "AppPrivateKey":
         """
-        Gets a private key object from a binary key file
-        """
+        Create an `AppPrivateKey` object from a file.
 
-        # Check if the file exists
+        Args:
+            file (Path): The path to the file containing the packed private key.
+
+        Returns:
+            AppPrivateKey: The created `AppPrivateKey` object.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+
+        """
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")
-
-        # Read the file and decode the data
         with open(file, "rb") as file:
             encoded_bytes = file.read()
-
-        # Return the private key object from serialized data
         return AppPrivateKey.from_packed(encoded_bytes)
 
     def decrypted_key_chunks(self, password: str):
         """
-        Returns the decrypted key chunks (list of bytes)
-        """
+        Decrypt the encrypted key chunks using the provided password.
 
-        # Write the encrypted chunks to a temporary file
+        Args:
+            password (str): The password to decrypt the private key.
+
+        Returns:
+            list: The decrypted key chunks.
+
+        """
         temp_file = Path(f"{cache_dir}/private.key.crypt")
         write_chunks(self.chunks, temp_file)
-
-        # Decrypt the chunks
         chunks = symmetric_decrypt(temp_file, password)
-
         return chunks
 
     def decrypted_key(self, password: str):
         """
-        Returns the NaCl private key object by 
-        decrypting the key chunks
+        Get the decrypted private key using the provided password.
+
+        Args:
+            password (str): The password to decrypt the private key.
+
+        Returns:
+            PrivateKey: The decrypted private key.
+
         """
-
-        # Get the decrypted key chunks
         chunks = self.decrypted_key_chunks(password)
-
-        # Join the chunks and return the key
         return PrivateKey(b"".join(chunks))
 
 
 class AppPublicKey(BaseKey):
     """
-    The public key object. `key` is the NaCl public key and
-    `data` has the metadata as well as the key. `packed` is
-    the serialized `data` that can be saved to a binary file.
+    Represents an application-specific public key.
+
+    This class extends the `BaseKey` class and provides additional functionality specific
+    to public keys used in the application.
+
+    Args:
+        meta (KeyMeta): The metadata associated with the public key.
+        key (bytes): The encoded NaCl public key.
+
+    Attributes:
+        meta (KeyMeta): The metadata associated with the public key.
+        key (bytes): The encoded NaCl public key.
+        data (dict): The serialized data representation of the public key.
+        packed (bytes): The packed data representation of the public key.
+
     """
 
     def __init__(self, meta: KeyMeta, key: bytes):
         super().__init__(meta)
-
-        # The key is an encoded NaCl public key
         self.key = key
         self.data = {
             "type": "public",
@@ -160,8 +216,6 @@ class AppPublicKey(BaseKey):
             "email": meta.email,
             "key": key
         }
-
-        # The packed data is the data that will be saved to a file
         self.packed = dumps(self.data)
 
     def __repr__(self):
@@ -170,8 +224,17 @@ class AppPublicKey(BaseKey):
     def __str__(self):
         return f"<PublicKey {self.meta.name} {self.meta.email}>"
 
-    # Saves the serialized data to a file
     def save(self, file: Path):
+        """
+        Save the serialized public key data to a file.
+
+        Args:
+            file (Path): The path to the file where the public key will be saved.
+
+        Raises:
+            FileExistsError: If the file already exists.
+
+        """
         if file.exists():
             raise FileExistsError("File already exists")
         with open(file, "wb") as file:
@@ -180,28 +243,36 @@ class AppPublicKey(BaseKey):
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPublicKey":
         """
-        Creates a public key object from serialized data
-        """
+        Create an `AppPublicKey` object from packed data.
 
+        Args:
+            packed (bytes): The packed data representing the public key.
+
+        Returns:
+            AppPublicKey: The created `AppPublicKey` object.
+
+        """
         data = loads(packed)
         meta = KeyMeta(data["name"], data["email"])
-
-        # Return the public key object
         return AppPublicKey(meta, data["key"])
 
     @classmethod
     def from_file(cls, file: Path) -> "AppPublicKey":
         """
-        Gets a public key object from a binary key file
-        """
+        Create an `AppPublicKey` object from a file.
 
-        # Check if file exists
+        Args:
+            file (Path): The path to the file containing the packed public key.
+
+        Returns:
+            AppPublicKey: The created `AppPublicKey` object.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+
+        """
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")
-
-        # Read the file and decode the data
         with open(file, "rb") as file:
             encoded_bytes = file.read()
-
-        # Return the public key object from serialized data
         return AppPublicKey.from_packed(encoded_bytes)

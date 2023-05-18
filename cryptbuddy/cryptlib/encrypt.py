@@ -2,7 +2,7 @@ from pathlib import Path
 
 from cryptbuddy.cryptlib.constants import *
 from cryptbuddy.cryptlib.key_io import AppPublicKey
-from cryptbuddy.cryptlib.keychain import keychain
+from cryptbuddy.cryptlib.keychain import Keychain
 from cryptbuddy.cryptlib.symmetric.encrypt import symmetric_encrypt
 from msgpack import dumps
 from nacl import utils
@@ -11,13 +11,29 @@ from nacl.public import PublicKey, SealedBox
 
 def asymmetric_encrypt(user: list, file: Path):
     """
-    Returns asymmetrically encrypted chunks. `user` is a list of 
-    usernames whose public keys will be used to encrypt the file. 
-    `file` is the file to be encrypted.
+    Encrypts a file using asymmetric encryption for multiple users.
+
+    This function encrypts a file using asymmetric encryption with the public keys of multiple users.
+    It retrieves the public keys from a keychain and encrypts the file symmetrically with a randomly
+    generated symmetric key. The symmetric key is then encrypted with each user's public key.
+
+    Args:
+        user (List[str]): A list of usernames for whom the file will be encrypted.
+        file (Path): The path to the file to be encrypted.
+
+    Raises:
+        Exception: If no public keys are found in the keychain.
+
+    Returns:
+        List[bytes]: A list of encrypted chunks of data.
+
+    Note:
+        The file can be decrypted using the corresponding `asymmetric_decrypt` function.
+
     """
 
     # Initialize the keychain
-    db = keychain()
+    db = Keychain()
 
     # Get the public keys of the users from the keychain
     public_keys_packed = []

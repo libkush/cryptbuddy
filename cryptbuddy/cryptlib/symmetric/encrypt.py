@@ -7,10 +7,23 @@ from nacl.bindings import sodium_increment
 
 def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> bytelist:
     """
-    Returns the encrypted chunks after symmetrically encrypting the file.
-    `file` is the file to be encrypted. `password` is the password to be
-    used to generate the key. `key` is the key to be used to encrypt the
-    file. Either `password` or `key` must be provided.
+    Encrypts a file using symmetric encryption with a password or key.
+
+    This function reads a file and encrypts its contents using symmetric encryption.
+    It requires either a password or a key for encryption.
+
+    Args:
+        file (Path): The path to the file to be encrypted.
+        password (str, optional): The password used for encryption. Defaults to None.
+        key (bytes, optional): The key used for encryption. Defaults to None.
+
+    Returns:
+        List[bytes]: A list of encrypted chunks of data.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        ValueError: If neither a password nor a key is provided.
+
     """
 
     # Check if the file exists and if the password or key is provided

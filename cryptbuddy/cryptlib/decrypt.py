@@ -9,11 +9,26 @@ from nacl.public import SealedBox
 
 def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivateKey):
     """
-    Returns the decrypted chunks. `file` is the file to be 
-    decrypted. `password` is the password of your private key. 
-    `private_key_object` is the private key object.
-    """
+    Decrypts a file using asymmetric encryption with a password and private key.
 
+    This function reads an encrypted file and decrypts its contents using asymmetric encryption.
+    It requires a password and a private key object for decryption.
+
+    Args:
+        file (Path): The path to the encrypted file.
+        password (str): The password used to decrypt the private key.
+        private_key_object (AppPrivateKey): The private key object used for decryption.
+
+    Raises:
+        ValueError: If the password is incorrect or the private key cannot be decrypted.
+
+    Returns:
+        List[bytes]: A list of decrypted chunks of data.
+
+    Note:
+        The file must have been encrypted using the corresponding `asymmetric_encrypt` function.
+
+    """
     # Get the decrypted NaCl private key object
     name = private_key_object.meta.name
     private_key = private_key_object.decrypted_key(password)
