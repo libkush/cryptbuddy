@@ -66,7 +66,7 @@ def shred(path: Annotated[Path, typer.Argument(
         return
 
     # Shred the file
-    shred_file(file)
+    shred_file(path)
     success("File shredded successfully")
 
 
