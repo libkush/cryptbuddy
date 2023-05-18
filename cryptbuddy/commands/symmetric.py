@@ -14,9 +14,10 @@ app = typer.Typer()
 
 @app.command()
 def encrypt(path: Annotated[Path, typer.Option(
-    help="Path of the file to encrypt",
+    help="Path of the file/decrypt to encrypt",
     exists=True,
     readable=True,
+    writable=True,
     resolve_path=True
 )],
     password: Annotated[
@@ -33,10 +34,26 @@ def encrypt(path: Annotated[Path, typer.Option(
     if stats < 0.3:
         warning("Password is weak!")
 
+    if path.is_dir():
+        # Encrypt all files in directory
+        for file in path.iterdir():
+            file = Path(file).absolute()
+            try:
+                chunks = symmetric_encrypt(file, password=password)
+                encrypted_path = file.with_suffix(".crypt")
+                write_chunks(chunks, encrypted_path)
+            except Exception as e:
+                error(e)
+            # Shred original file if specified
+            if shred:
+                shred_file(file)
+        success("All files in directory encrypted successfully")
+        return
+
     # Encrypt file symmetrically
     try:
         chunks = symmetric_encrypt(path, password=password)
-        encrypted_path = Path(f"{path}.crypt")
+        encrypted_path = file.with_suffix(".crypt")
         write_chunks(chunks, encrypted_path)
     except Exception as e:
         error(e)
@@ -52,6 +69,7 @@ def decrypt(path: Annotated[Path, typer.Option(
     help="Path of the file to decrypt",
     exists=True,
     readable=True,
+    writable=True,
     resolve_path=True)],
     password: Annotated[
     str, typer.Option(
@@ -62,13 +80,30 @@ def decrypt(path: Annotated[Path, typer.Option(
     Decrypt a file using a password
     """
 
+    if path.is_dir():
+        # Decrypt all files in directory
+        for file in path.iterdir():
+            file = Path(file).absolute()
+            try:
+                chunks = symmetric_decrypt(file, password)
+                if file.suffix == ".crypt":
+                    decrypted_path = file.with_suffix("")
+                    print(decrypted_path)
+                else:
+                    decrypted_path = file.with_suffix(".dec")
+                write_chunks(chunks, decrypted_path)
+            except Exception as e:
+                error(e)
+        success("All files in directory decrypted successfully")
+        return
+
     # Decrypt file symmetrically
     try:
         chunks = symmetric_decrypt(path, password)
         if path.suffix == ".crypt":
-            decrypted_path = Path(path.stem)
+            decrypted_path = path.with_suffix("")
         else:
-            decrypted_path = Path(f"{path}.dec")
+            decrypted_path = path.with_suffix(".dec")
         write_chunks(chunks, decrypted_path)
     except Exception as e:
         error(e)
