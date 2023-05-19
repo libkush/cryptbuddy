@@ -171,6 +171,7 @@ class AppPrivateKey(BaseKey):
         temp_file = Path(f"{cache_dir}/private.key.crypt")
         write_chunks(self.chunks, temp_file)
         chunks = symmetric_decrypt(temp_file, password)
+        shred_file(temp_file)
         return chunks
 
     def decrypted_key(self, password: str):
