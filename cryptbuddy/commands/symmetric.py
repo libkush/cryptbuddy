@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from cryptbuddy.cryptlib.file_io import shred_file, write_chunks
-from cryptbuddy.cryptlib.symmetric.decrypt import symmetric_decrypt
-from cryptbuddy.cryptlib.symmetric.encrypt import symmetric_encrypt
-from cryptbuddy.cryptlib.utils import *
+from cryptbuddy.lib.file_io import shred_file, write_chunks
+from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
+from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
+from cryptbuddy.lib.utils import *
 from password_strength import PasswordStats
 from typing_extensions import Annotated
 
@@ -45,13 +45,13 @@ def encrypt(path: Annotated[Path, typer.Argument(
                     write_chunks(chunks, encrypted_path)
                 except Exception as e:
                     error(e)
+                success(f"{file} encrypted")
                 # Shred original file if specified
                 if shred:
                     shred_file(file)
-        success("All files in directory encrypted successfully")
+                    info(f"{file} shredded")
+        success(f"All files in {path} encrypted")
         return
-
-    # Encrypt file symmetrically
 
     try:
         chunks = symmetric_encrypt(path, password=password)
@@ -59,11 +59,12 @@ def encrypt(path: Annotated[Path, typer.Argument(
         write_chunks(chunks, encrypted_path)
     except Exception as e:
         error(e)
-    success("File encrypted successfully")
+    success(f"{path} encrypted")
 
     # Shred file if specified
     if shred:
         shred_file(path)
+        info(f"{path} shredded")
 
 
 @app.command()
@@ -96,10 +97,12 @@ def decrypt(path: Annotated[Path, typer.Argument(
                     write_chunks(chunks, decrypted_path)
                 except Exception as e:
                     error(e)
+                success(f"{file} decrypted")
                 # Shred original file if specified
                 if shred:
                     shred_file(file)
-        success("All files in directory decrypted successfully")
+                    info(f"{file} shredded")
+        success(f"All files in {path} decrypted")
         return
 
     # Decrypt file symmetrically
@@ -112,11 +115,12 @@ def decrypt(path: Annotated[Path, typer.Argument(
         write_chunks(chunks, decrypted_path)
     except Exception as e:
         error(e)
-    success("File decrypted successfully")
+    success(f"{path} decrypted")
 
     # Shred file if specified
     if shred:
         shred_file(path)
+        info(f"{path} shredded")
 
 
 if __name__ == "__main__":

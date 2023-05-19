@@ -1,8 +1,9 @@
 from pathlib import Path
 
-from cryptbuddy.cryptlib.file_io import cache_dir, shred_file
-from cryptbuddy.cryptlib.key_io import AppPrivateKey
-from cryptbuddy.cryptlib.symmetric.decrypt import symmetric_decrypt
+from cryptbuddy.lib.file_io import cache_dir, shred_file
+from cryptbuddy.lib.key_io import AppPrivateKey
+from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
+from cryptbuddy.lib.utils import info
 from msgpack import loads
 from nacl.public import SealedBox
 
@@ -29,6 +30,8 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
         The file must have been encrypted using the corresponding `asymmetric_encrypt` function.
 
     """
+
+    info(f"Decrypting {file}")
 
     # Get the decrypted NaCl private key object
     name = private_key_object.meta.name

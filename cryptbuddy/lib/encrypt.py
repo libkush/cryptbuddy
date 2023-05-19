@@ -1,16 +1,17 @@
 from pathlib import Path
 from typing import List
 
-from cryptbuddy.cryptlib.constants import *
-from cryptbuddy.cryptlib.key_io import AppPublicKey
-from cryptbuddy.cryptlib.keychain import Keychain
-from cryptbuddy.cryptlib.symmetric.encrypt import symmetric_encrypt
+from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.key_io import AppPublicKey
+from cryptbuddy.lib.keychain import Keychain
+from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
+from cryptbuddy.lib.utils import *
 from msgpack import dumps
 from nacl import utils
 from nacl.public import PublicKey, SealedBox
 
 
-def asymmetric_encrypt(user: List[str], file: Path):
+def asymmetric_encrypt(users: List[str], file: Path):
     """
     Encrypts a file using asymmetric encryption for multiple users.
 
@@ -33,12 +34,14 @@ def asymmetric_encrypt(user: List[str], file: Path):
 
     """
 
+    info(f"Encrypting {file} for {users}")
+
     # Initialize the keychain
     db = Keychain()
 
     # Get the public keys of the users from the keychain
     public_keys_packed = []
-    for u in user:
+    for u in users:
         public_keys_packed.append(db.get_key(name=u))
     if len(public_keys_packed) == 0:
         raise Exception("No public keys found")

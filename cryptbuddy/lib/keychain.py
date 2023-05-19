@@ -1,6 +1,6 @@
 import sqlite3
 
-from cryptbuddy.cryptlib.file_io import *
+from cryptbuddy.lib.file_io import *
 
 create_directories()
 
@@ -38,6 +38,7 @@ class Keychain:
             key (bytes): The key to be added.
 
         """
+        info(f"Adding key {name} to keychain")
         self.c.execute(
             "INSERT INTO keys (name, key) VALUES (?, ?)", (name, key))
         self.conn.commit()
@@ -62,8 +63,10 @@ class Keychain:
             raise ValueError("Must specify name or ID")
 
         if id:
+            info(f"Retrieving key {id} from keychain")
             self.c.execute("SELECT key FROM keys WHERE id = ?", (id,))
         else:
+            info(f"Retrieving key {name} from keychain")
             self.c.execute("SELECT key FROM keys WHERE name = ?", (name,))
 
         result = self.c.fetchone()
@@ -99,8 +102,10 @@ class Keychain:
             raise ValueError("Must specify name or ID")
 
         if id:
+            info(f"Deleting key {id} from keychain")
             self.c.execute("DELETE FROM keys WHERE id = ?", (id,))
         else:
+            info(f"Deleting key {name} from keychain")
             self.c.execute("DELETE FROM keys WHERE name = ?", (name,))
 
         self.conn.commit()

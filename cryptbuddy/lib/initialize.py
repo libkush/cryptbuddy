@@ -1,8 +1,9 @@
 from pathlib import Path
 
-from cryptbuddy.cryptlib.file_io import *
-from cryptbuddy.cryptlib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
-from cryptbuddy.cryptlib.keychain import Keychain
+from cryptbuddy.lib.file_io import *
+from cryptbuddy.lib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
+from cryptbuddy.lib.keychain import Keychain
+from cryptbuddy.lib.utils import *
 from nacl.public import PrivateKey
 
 
@@ -32,9 +33,9 @@ def initialize_cryptbuddy(name: str, email: str, password: str):
     create_directories()
 
     # Keypair will be stored in config directory
-    print("Keys will be stored at: ", config_dir)
-    print("Keychain is at: ", data_dir)
-    print("Cache is at: ", cache_dir)
+    info("Keys will be stored at: ", config_dir)
+    info("Keychain is at: ", data_dir)
+    info("Cache is at: ", cache_dir)
 
     # Check for correct argument values
     if not (isinstance(name, str) or isinstance(email, str) or isinstance(password, str)):
@@ -47,8 +48,10 @@ def initialize_cryptbuddy(name: str, email: str, password: str):
         raise FileExistsError("Public key already exists")
 
     # Generate keypair using NaCl
+    info("Generating keypair...")
     private_key_generated = PrivateKey.generate()
     public_key_generated = private_key_generated.public_key
+    info("Generated keypair")
 
     # Create keypair objects
     meta = KeyMeta(name, email)
@@ -59,7 +62,10 @@ def initialize_cryptbuddy(name: str, email: str, password: str):
     # Save keys to files
     private_key.save(Path(f"{config_dir}/private.key"))
     public_key.save(Path(f"{config_dir}/public.key"))
+    info("Saved keys to config directory")
 
     # Initialize and add public key to keychain
+    info("Initializing keychain...")
     chain = Keychain()
     chain.add_key(name, public_key.packed)
+    info("Saved your public key to the keychain")

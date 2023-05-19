@@ -8,14 +8,14 @@ from typing_extensions import Annotated
 
 import cryptbuddy.commands.chain as chain
 import cryptbuddy.commands.symmetric as symmetric
-from cryptbuddy.cryptlib.constants import *
-from cryptbuddy.cryptlib.decrypt import asymmetric_decrypt
-from cryptbuddy.cryptlib.encrypt import asymmetric_encrypt
-from cryptbuddy.cryptlib.file_io import config_dir, shred_file, write_chunks
-from cryptbuddy.cryptlib.initialize import initialize_cryptbuddy
-from cryptbuddy.cryptlib.key_io import AppPrivateKey
-from cryptbuddy.cryptlib.keychain import Keychain
-from cryptbuddy.cryptlib.utils import *
+from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.decrypt import asymmetric_decrypt
+from cryptbuddy.lib.encrypt import asymmetric_encrypt
+from cryptbuddy.lib.file_io import config_dir, shred_file, write_chunks
+from cryptbuddy.lib.initialize import initialize_cryptbuddy
+from cryptbuddy.lib.key_io import AppPrivateKey
+from cryptbuddy.lib.keychain import Keychain
+from cryptbuddy.lib.utils import *
 
 db = Keychain()
 app = typer.Typer(name="cryptbuddy",
@@ -77,15 +77,21 @@ def export(dir: Annotated[Path, typer.Argument(
     exists=True,
     writable=True,
     resolve_path=True,
-    dir_okay=True
+    dir_okay=True,
+    file_okay=False
 )]):
     """
     Export your public key to share with others
     """
 
+    # Check if public key exists
+    public_key_path = Path(f"{config_dir}/public.key")
+    if not public_key_path.exists():
+        error("Public key not found")
+
     # Copy public key to specified directory
     try:
-        copyfile(Path(f"{config_dir}/public.key"), Path(f"{dir}/public.key"))
+        copyfile(public_key_path, Path(f"{dir}/public.key"))
     except Exception as e:
         error(e)
 
@@ -117,7 +123,8 @@ def encrypt(path: Annotated[Path, typer.Argument(
                 except Exception as e:
                     error(e)
                 write_chunks(chunks, file.with_suffix(suffix+".crypt"))
-        success("All files in the directory encrypted successfully")
+                success(f"{file} encrypted")
+        success(f"All files in the {path} encrypted")
         return
 
     # Encrypt the file
@@ -128,7 +135,7 @@ def encrypt(path: Annotated[Path, typer.Argument(
 
     suffix = path.suffix
     write_chunks(chunks, path.with_suffix(suffix+".crypt"))
-    success("File encrypted successfully")
+    success(f"{path} encrypted")
 
 
 @app.command()
@@ -169,7 +176,8 @@ def decrypt(path: Annotated[Path, typer.Argument(
                     write_chunks(chunks, file.with_suffix(""))
                 else:
                     write_chunks(chunks, file.with_suffix(".dec"))
-        success("All files in the directory decrypted successfully")
+                success(f"{file} decrypted")
+        success(f"All files in the {path} decrypted")
         return
 
     # Decrypt the file
@@ -184,7 +192,7 @@ def decrypt(path: Annotated[Path, typer.Argument(
     else:
         write_chunks(chunks, path.with_suffix(".dec"))
 
-    success("File decrypted successfully")
+    success(f"{path} decrypted")
 
 
 if __name__ == "__main__":

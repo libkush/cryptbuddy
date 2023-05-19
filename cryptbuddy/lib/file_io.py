@@ -6,6 +6,8 @@ from nacl.utils import random
 
 import random
 
+from cryptbuddy.lib.utils import info
+
 
 def shred_file(path: Path):
     """
@@ -21,6 +23,8 @@ def shred_file(path: Path):
     # Check if the file exists
     if not (path.exists() or path.is_file()):
         raise FileNotFoundError("File does not exist")
+
+    info(f"Shredding {path}")
 
     # Overwrite the file with random data
     size = path.stat().st_size

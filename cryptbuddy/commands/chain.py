@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from cryptbuddy.cryptlib.key_io import AppPublicKey
-from cryptbuddy.cryptlib.keychain import Keychain
-from cryptbuddy.cryptlib.utils import *
+from cryptbuddy.lib.key_io import AppPublicKey
+from cryptbuddy.lib.keychain import Keychain
+from cryptbuddy.lib.utils import *
 from typing_extensions import Annotated
 
 app = typer.Typer()

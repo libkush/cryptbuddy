@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from cryptbuddy.cryptlib.file_io import *
-from cryptbuddy.cryptlib.symmetric.decrypt import symmetric_decrypt
-from cryptbuddy.cryptlib.symmetric.encrypt import symmetric_encrypt
+from cryptbuddy.lib.file_io import *
+from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
+from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
 from msgpack import dumps, loads
 from nacl.public import PrivateKey
 

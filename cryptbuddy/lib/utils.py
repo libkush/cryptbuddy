@@ -2,41 +2,57 @@ import typer
 from tabulate import tabulate
 
 
-def success(msg: str):
+def success(*args: object):
     """
     Display a success message.
 
     Args:
-        msg (str): The success message.
+        *args (object): The success message(s).
 
     """
+    msg = " ".join(str(arg) for arg in args)
     success = typer.style(f"SUCCESS: {msg}", fg=typer.colors.GREEN, bold=True)
     typer.echo(success)
 
 
-def warning(msg: str):
+def warning(*args: object):
     """
     Display a warning message.
 
     Args:
-        msg (str): The warning message.
+        *args (object): The warning message(s).
 
     """
+    msg = " ".join(str(arg) for arg in args)
     warning = typer.style(f"WARNING: {msg}", fg=typer.colors.YELLOW, bold=True)
     typer.echo(warning)
 
 
-def error(msg: str):
+def error(*args: object):
     """
     Display an error message and raise a typer.Exit exception.
 
     Args:
-        msg (str): The error message.
+        *args (object): The error message(s).
 
     """
+    msg = " ".join(str(arg) for arg in args)
     error = typer.style(f"ERROR: {msg}", fg=typer.colors.RED, bold=True)
     typer.echo(error)
     raise typer.Exit(1)
+
+
+def info(*args):
+    """
+    Display an info message.
+
+    Args:
+        *args (object): The info message(s).
+
+    """
+    msg = " ".join(str(arg) for arg in args)
+    info = typer.style(f"INFO: {msg}", fg=typer.colors.BLUE, bold=True)
+    typer.echo(info)
 
 
 def print_table(records, table_data):
