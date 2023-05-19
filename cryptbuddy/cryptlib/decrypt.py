@@ -29,6 +29,7 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
         The file must have been encrypted using the corresponding `asymmetric_encrypt` function.
 
     """
+
     # Get the decrypted NaCl private key object
     name = private_key_object.meta.name
     private_key = private_key_object.decrypted_key(password)
@@ -49,7 +50,7 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
     symmetric_key = unseal_box.decrypt(my_key)
 
     # Store the encrypted chunks to a temporary file
-    tmp = Path(f"{cache_dir}/{str(file)}")
+    tmp = Path(f"{cache_dir}/{str(file.name)}")
     with open(tmp, "wb") as infile:
         infile.write(encrypted_chunks)
 

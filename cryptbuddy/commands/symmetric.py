@@ -38,9 +38,10 @@ def encrypt(path: Annotated[Path, typer.Argument(
         # Encrypt all files in directory
         for file in path.iterdir():
             if file.is_file():
+                suffix = file.suffix
                 try:
                     chunks = symmetric_encrypt(file, password=password)
-                    encrypted_path = file.with_suffix(".crypt")
+                    encrypted_path = file.with_suffix(suffix+".crypt")
                     write_chunks(chunks, encrypted_path)
                 except Exception as e:
                     error(e)
@@ -51,9 +52,10 @@ def encrypt(path: Annotated[Path, typer.Argument(
         return
 
     # Encrypt file symmetrically
+
     try:
         chunks = symmetric_encrypt(path, password=password)
-        encrypted_path = path.with_suffix(".crypt")
+        encrypted_path = path.with_suffix(path.suffix+".crypt")
         write_chunks(chunks, encrypted_path)
     except Exception as e:
         error(e)

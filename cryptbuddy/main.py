@@ -110,12 +110,13 @@ def encrypt(path: Annotated[Path, typer.Argument(
     if path.is_dir():
         # Encrypt the directory
         for file in path.iterdir():
+            suffix = file.suffix
             if file.is_file():
                 try:
                     chunks = asymmetric_encrypt(user, file)
                 except Exception as e:
                     error(e)
-                write_chunks(chunks, file.with_suffix(".crypt"))
+                write_chunks(chunks, file.with_suffix(suffix+".crypt"))
         success("All files in the directory encrypted successfully")
         return
 
@@ -125,7 +126,8 @@ def encrypt(path: Annotated[Path, typer.Argument(
     except Exception as e:
         error(e)
 
-    write_chunks(chunks, path.with_suffix(".crypt"))
+    suffix = path.suffix
+    write_chunks(chunks, path.with_suffix(suffix+".crypt"))
     success("File encrypted successfully")
 
 
