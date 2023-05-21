@@ -47,7 +47,7 @@ def init(name: Annotated[str, typer.Option(help="Username")],
 
 
 @app.command()
-def shred(path: Annotated[Path, typer.Argument(
+def shred(paths: Annotated[List[Path], typer.Argument(
     help="Path of the file to be shredded",
     exists=True,
     readable=True,
@@ -56,19 +56,19 @@ def shred(path: Annotated[Path, typer.Argument(
     """
     Shred a file such that it cannot be recovered
     """
+    for path in paths:
+        if path.is_dir():
+            # Shred the directory
+            for file in path.iterdir():
+                if file.is_file():
+                    shred_file(file)
+            path.rmdir()
+            success(f"All files in {path} shredded")
+            return
 
-    if path.is_dir():
-        # Shred the directory
-        for file in path.iterdir():
-            if file.is_file():
-                shred_file(file)
-        path.rmdir()
-        success("Directory shredded successfully")
-        return
-
-    # Shred the file
-    shred_file(path)
-    success("File shredded successfully")
+        # Shred the file
+        shred_file(path)
+        success(f"{path} shredded")
 
 
 @app.command()
@@ -99,7 +99,7 @@ def export(dir: Annotated[Path, typer.Argument(
 
 
 @app.command()
-def encrypt(path: Annotated[Path, typer.Argument(
+def encrypt(paths: Annotated[List[Path], typer.Argument(
     help="Path of the file to encrypt",
     exists=True,
     readable=True,
@@ -113,33 +113,34 @@ def encrypt(path: Annotated[Path, typer.Argument(
     if len(user) == 0:
         error("No users specified")
 
-    if path.is_dir():
-        # Encrypt the directory
-        for file in path.iterdir():
-            suffix = file.suffix
-            if file.is_file():
-                try:
-                    chunks = asymmetric_encrypt(user, file)
-                except Exception as e:
-                    error(e)
-                write_chunks(chunks, file.with_suffix(suffix+".crypt"))
-                success(f"{file} encrypted")
-        success(f"All files in the {path} encrypted")
-        return
+    for path in paths:
+        if path.is_dir():
+            # Encrypt the directory
+            for file in path.iterdir():
+                suffix = file.suffix
+                if file.is_file():
+                    try:
+                        chunks = asymmetric_encrypt(user, file)
+                    except Exception as e:
+                        error(e)
+                    write_chunks(chunks, file.with_suffix(suffix+".crypt"))
+                    success(f"{file} encrypted")
+            success(f"All files in the {path} encrypted")
+            return
 
-    # Encrypt the file
-    try:
-        chunks = asymmetric_encrypt(user, path)
-    except Exception as e:
-        error(e)
+        # Encrypt the file
+        try:
+            chunks = asymmetric_encrypt(user, path)
+        except Exception as e:
+            error(e)
 
-    suffix = path.suffix
-    write_chunks(chunks, path.with_suffix(suffix+".crypt"))
-    success(f"{path} encrypted")
+        suffix = path.suffix
+        write_chunks(chunks, path.with_suffix(suffix+".crypt"))
+        success(f"{path} encrypted")
 
 
 @app.command()
-def decrypt(path: Annotated[Path, typer.Argument(
+def decrypt(paths: Annotated[List[Path], typer.Argument(
     help="Path of the file to decrypt",
     exists=True,
     readable=True,
@@ -154,45 +155,46 @@ def decrypt(path: Annotated[Path, typer.Argument(
     Decrypt a file using your private key
     """
 
-    private_key_path = Path(f"{config_dir}/private.key")
-    if not private_key_path.exists():
-        error("Private key not found")
+    for path in paths:
+        private_key_path = Path(f"{config_dir}/private.key")
+        if not private_key_path.exists():
+            error("Private key not found")
 
-    # Get your private key object from config directory
-    private_key_object = AppPrivateKey.from_file(
-        private_key_path)
+        # Get your private key object from config directory
+        private_key_object = AppPrivateKey.from_file(
+            private_key_path)
 
-    if path.is_dir():
-        # Decrypt the directory
-        for file in path.iterdir():
-            if file.is_file():
-                try:
-                    chunks = asymmetric_decrypt(
-                        file, password, private_key_object)
-                except Exception as e:
-                    error(e)
+        if path.is_dir():
+            # Decrypt the directory
+            for file in path.iterdir():
+                if file.is_file():
+                    try:
+                        chunks = asymmetric_decrypt(
+                            file, password, private_key_object)
+                    except Exception as e:
+                        error(e)
 
-                if file.suffix == ".crypt":
-                    write_chunks(chunks, file.with_suffix(""))
-                else:
-                    write_chunks(chunks, file.with_suffix(".dec"))
-                success(f"{file} decrypted")
-        success(f"All files in the {path} decrypted")
-        return
+                    if file.suffix == ".crypt":
+                        write_chunks(chunks, file.with_suffix(""))
+                    else:
+                        write_chunks(chunks, file.with_suffix(".dec"))
+                    success(f"{file} decrypted")
+            success(f"All files in the {path} decrypted")
+            return
 
-    # Decrypt the file
-    try:
-        chunks = asymmetric_decrypt(path, password, private_key_object)
-    except Exception as e:
-        error(e)
+        # Decrypt the file
+        try:
+            chunks = asymmetric_decrypt(path, password, private_key_object)
+        except Exception as e:
+            error(e)
 
-    # Write the decrypted chunks to a file
-    if path.suffix == ".crypt":
-        write_chunks(chunks, path.stem)
-    else:
-        write_chunks(chunks, path.with_suffix(".dec"))
+        # Write the decrypted chunks to a file
+        if path.suffix == ".crypt":
+            write_chunks(chunks, path.stem)
+        else:
+            write_chunks(chunks, path.with_suffix(".dec"))
 
-    success(f"{path} decrypted")
+        success(f"{path} decrypted")
 
 
 if __name__ == "__main__":
