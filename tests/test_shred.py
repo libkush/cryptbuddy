@@ -2,6 +2,8 @@ from pathlib import Path
 import subprocess
 import pytest
 
+from tests.utils import print_result
+
 test_dir = Path(__file__).parent
 
 subprocess.run(["poetry", "install"], cwd=test_dir.parent)
@@ -16,10 +18,7 @@ def test_shred_singlefile():
         shred_command = ["cb", "shred", str(file)]
         shred_result = subprocess.run(
             shred_command, capture_output=True, text=True, cwd=test_dir)
-        print("=== SHRED STDOUT ===")
-        print(shred_result.stdout)
-        print("=== SHRED STDERR ===")
-        print(shred_result.stderr)
+        print_result(shred_result)
         assert shred_result.returncode == 0
         assert "SUCCESS" in shred_result.stdout
     finally:
@@ -53,10 +52,7 @@ def test_shred_directory():
         shred_command = ["cb", "shred", str(dir1)]
         shred_result = subprocess.run(
             shred_command, capture_output=True, text=True, cwd=test_dir)
-        print("=== SHRED STDOUT ===")
-        print(shred_result.stdout)
-        print("=== SHRED STDERR ===")
-        print(shred_result.stderr)
+        print_result(shred_result)
         assert shred_result.returncode == 0
         assert "SUCCESS" in shred_result.stdout
     finally:
@@ -64,6 +60,6 @@ def test_shred_directory():
             delete_folder(dir1)
 
 
-# Run the test
+    # Run the test
 if __name__ == '__main__':
     pytest.main([__file__])

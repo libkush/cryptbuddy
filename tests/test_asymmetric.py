@@ -19,10 +19,7 @@ def test_asymmetric_singlefile(password, user, message):
             encrypt_command, capture_output=True, text=True, cwd=test_dir)
 
         # Print the encryption stdout and stderr
-        print("=== ENCRYPTION STDOUT ===")
-        print(encrypt_result.stdout)
-        print("=== ENCRYPTION STDERR ===")
-        print(encrypt_result.stderr)
+        print_result(encrypt_result)
 
         # Assert the encryption return code and check for success message
         assert encrypt_result.returncode == 0
@@ -72,10 +69,7 @@ def test_asymmetric_directory(password, user):
             encrypt_command, capture_output=True, text=True, cwd=test_dir)
 
         # Print the encryption stdout and stderr
-        print("=== ENCRYPTION STDOUT ===")
-        print(encrypt_result.stdout)
-        print("=== ENCRYPTION STDERR ===")
-        print(encrypt_result.stderr)
+        print_result(encrypt_result)
 
         # Assert the encryption return code and check for success message
         assert encrypt_result.returncode == 0
@@ -94,10 +88,7 @@ def test_asymmetric_directory(password, user):
             decrypt_command, capture_output=True, text=True, cwd=test_dir)
 
         # Print the decryption stdout and stderr
-        print("=== DECRYPTION STDOUT ===")
-        print(decrypt_result.stdout)
-        print("=== DECRYPTION STDERR ===")
-        print(decrypt_result.stderr)
+        print_result(decrypt_result)
 
         # Assert the decryption return code and check for success message
         assert decrypt_result.returncode == 0
@@ -116,6 +107,71 @@ def test_asymmetric_directory(password, user):
         # Clean up both the original and encrypted files
         if dir1.exists():
             delete_folder(dir1)
+
+
+@pytest.mark.parametrize("password", ["R@nd0m5h1t"])
+@pytest.mark.parametrize("message", ["All sloths are slow"])
+@pytest.mark.parametrize("user", ["Kush Patel"])
+def test_asymmetric_multipath(message, password, user):
+
+    dir1, file1, file2 = make_test_dir(
+        test_dir, 'test_file1.txt', 'test_file2.txt')
+
+    file, fname = make_singlefile(message, test_dir, 'test_file.txt')
+
+    try:
+        # Encryption
+        encrypt_command = ["cb", "encrypt",
+                           str(dir1), str(file), "--user", user]
+
+        encrypt_result = subprocess.run(
+            encrypt_command, capture_output=True, text=True, cwd=test_dir)
+
+        # Print the encryption stdout and stderr
+        print_result(encrypt_result)
+
+        # Assert the encryption return code and check for success message
+        assert encrypt_result.returncode == 0
+        assert "SUCCESS" in encrypt_result.stdout
+        assert "All files" in encrypt_result.stdout
+
+        # Delete the original files after encryption
+        for f in dir1.iterdir():
+            if not f.suffix == '.crypt':
+                f.unlink()
+        file.unlink()
+
+        encrypted_file = file.with_suffix(file.suffix+'.crypt')
+        decrypt_command = ["cb", "decrypt",
+                           str(encrypted_file), str(dir1), "--password", password]
+        decrypt_result = subprocess.run(
+            decrypt_command, capture_output=True, text=True, cwd=test_dir)
+
+        # Print the decryption stdout and stderr
+        print_result(decrypt_result)
+
+        # Assert the decryption return code and check for success message
+        assert decrypt_result.returncode == 0
+        assert "SUCCESS" in decrypt_result.stdout
+        assert "All files" in decrypt_result.stdout
+
+        # Verify the decrypted file contents
+        decrypted_contents1 = file1.read_text()
+        decrypted_contents2 = file2.read_text()
+        decrypted_contents3 = file.read_text()
+        expected_contents1 = 'cats and dogs'
+        expected_contents2 = 'dogs and cats'
+        expected_contents3 = message
+        assert decrypted_contents1 == expected_contents1
+        assert decrypted_contents2 == expected_contents2
+        assert decrypted_contents3 == expected_contents3
+
+    finally:
+        # Clean up both the original and encrypted files
+        if dir1.exists():
+            delete_folder(dir1)
+        if file.exists():
+            file.unlink()
 
 
 # Run the test
