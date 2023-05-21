@@ -40,15 +40,32 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
     # Create a sealed box with the private key
     unseal_box = SealedBox(private_key)
 
+    delimiter = b'\xFF\xFF\xFF\xFF'
+    escape_sequence = b'\xAA\xAA\xAA\xAA'
+
     # Read the serialized keys before the first newline
     with open(file, "rb") as infile:
-        contents = infile.read()
-        newline_index = contents.index(b'\n')
-        packed_keys = contents[:newline_index]
-        encrypted_chunks = contents[newline_index+1:]
+        file_data = infile.read()
 
-    # Decrypt the symmetric key using your private key
+    # Find the index of the first delimiter
+    delimiter_index = file_data.find(delimiter)
+    while delimiter_index > 0 and file_data[delimiter_index - len(escape_sequence):delimiter_index] == escape_sequence:
+        # The delimiter is part of the packed keys, search for the next occurrence
+        delimiter_index = file_data.find(delimiter, delimiter_index + 1)
+
+    if delimiter_index == -1:
+        raise ValueError("Delimiter not found or preceded by escape sequence")
+
+    packed_keys = file_data[:delimiter_index]
+
+    # Process the escape sequences within the packed keys
+    packed_keys = packed_keys.replace(escape_sequence + delimiter, delimiter)
+
+    # # Decrypt the symmetric key using your private key
     keys = loads(packed_keys)
+
+    encrypted_chunks = file_data[delimiter_index + len(delimiter):]
+
     my_key = keys[name]
     symmetric_key = unseal_box.decrypt(my_key)
 
