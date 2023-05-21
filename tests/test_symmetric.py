@@ -1,18 +1,16 @@
 from pathlib import Path
 import subprocess
 import pytest
-
-test_dir = Path(__file__).parent
+from tests.utils import *
 
 subprocess.run(["poetry", "install"], cwd=test_dir.parent)
 
 
 @pytest.mark.parametrize("password", ["R@nd0m5h1t"])
-def test_symmetric_singlefile(password):
-    fname = 'test_file.txt'
-    file = Path(test_dir, fname)
-    with open(file, 'w') as f:
-        f.write('All sloths are slow')
+@pytest.mark.parametrize("message", ["All sloths are slow"])
+def test_symmetric_singlefile(message, password):
+
+    file, fname = make_singlefile(message, test_dir, 'test_file.txt')
 
     try:
         # Encryption
@@ -64,28 +62,11 @@ def test_symmetric_singlefile(password):
             encrypted_file.unlink()
 
 
-def delete_folder(pth):
-    for sub in pth.iterdir():
-        if sub.is_dir():
-            delete_folder(sub)
-        else:
-            sub.unlink()
-    pth.rmdir()
-
-
 @pytest.mark.parametrize("password", ["R@nd0m5h1t"])
 def test_symmetric_directory(password):
-    dir1 = Path(test_dir, 'dir1')
-    fname1 = 'test_file1.txt'
-    fname2 = 'test_file2.txt'
-    file1 = Path(dir1, fname1)
-    file2 = Path(dir1, fname2)
 
-    dir1.mkdir()
-    with open(file1, 'w') as f:
-        f.write('All sloths are slow')
-    with open(file2, 'w') as f:
-        f.write('All sloths are slow again')
+    dir1, file1, file2 = make_test_dir(
+        test_dir, 'test_file1.txt', 'test_file2.txt')
 
     try:
         # Encryption
@@ -130,8 +111,8 @@ def test_symmetric_directory(password):
         # Verify the decrypted file contents
         decrypted_contents1 = file1.read_text()
         decrypted_contents2 = file2.read_text()
-        expected_contents1 = 'All sloths are slow'
-        expected_contents2 = 'All sloths are slow again'
+        expected_contents1 = 'cats and dogs'
+        expected_contents2 = 'dogs and cats'
         assert decrypted_contents1 == expected_contents1
         assert decrypted_contents2 == expected_contents2
 

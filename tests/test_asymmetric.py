@@ -1,20 +1,17 @@
 from pathlib import Path
 import subprocess
 import pytest
-
-test_dir = Path(__file__).parent
-user = "Kush Patel"
+from tests.utils import *
 
 subprocess.run(["poetry", "install"], cwd=test_dir.parent)
 
 
 @pytest.mark.parametrize("password", ["R@nd0m5h1t"])
-def test_asymmetric_singlefile(password):
-    fname = 'test_file.txt'
-    file = Path(test_dir, fname)
-    with open(file, 'w') as f:
-        f.write('All sloths are slow')
+@pytest.mark.parametrize("user", ["Kush Patel"])
+@pytest.mark.parametrize("message", ["All sloths are slow"])
+def test_asymmetric_singlefile(password, user, message):
 
+    file, fname = make_singlefile(message, test_dir, 'test_file.txt')
     try:
         # Encryption
         encrypt_command = ["cb", "encrypt", str(file), "--user", f"{user}"]
@@ -42,10 +39,7 @@ def test_asymmetric_singlefile(password):
             decrypt_command, capture_output=True, text=True, cwd=test_dir)
 
         # Print the decryption stdout and stderr
-        print("=== DECRYPTION STDOUT ===")
-        print(decrypt_result.stdout)
-        print("=== DECRYPTION STDERR ===")
-        print(decrypt_result.stderr)
+        print_result(decrypt_result)
 
         # Assert the decryption return code and check for success message
         assert decrypt_result.returncode == 0
@@ -53,8 +47,7 @@ def test_asymmetric_singlefile(password):
 
         # Verify the decrypted file contents
         decrypted_contents = Path(test_dir, fname).read_text()
-        expected_contents = 'All sloths are slow'
-        assert decrypted_contents == expected_contents
+        assert decrypted_contents == message
 
     finally:
         # Clean up both the original and encrypted files
@@ -64,28 +57,12 @@ def test_asymmetric_singlefile(password):
             encrypted_file.unlink()
 
 
-def delete_folder(pth):
-    for sub in pth.iterdir():
-        if sub.is_dir():
-            delete_folder(sub)
-        else:
-            sub.unlink()
-    pth.rmdir()
-
-
 @pytest.mark.parametrize("password", ["R@nd0m5h1t"])
-def test_asymmetric_directory(password):
-    dir1 = Path(test_dir, 'dir1')
-    fname1 = 'test_file1.txt'
-    fname2 = 'test_file2.txt'
-    file1 = Path(dir1, fname1)
-    file2 = Path(dir1, fname2)
+@pytest.mark.parametrize("user", ["Kush Patel"])
+def test_asymmetric_directory(password, user):
 
-    dir1.mkdir()
-    with open(file1, 'w') as f:
-        f.write('cats and dogs')
-    with open(file2, 'w') as f:
-        f.write('dogs and cats')
+    dir1, file1, file2 = make_test_dir(
+        test_dir, 'test_file1.txt', 'test_file2.txt')
 
     try:
         # Encryption
@@ -140,6 +117,7 @@ def test_asymmetric_directory(password):
         if dir1.exists():
             delete_folder(dir1)
 
-        # Run the test
+
+# Run the test
 if __name__ == '__main__':
     pytest.main([__file__])
