@@ -23,6 +23,7 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
 
     Raises:
         ValueError: If the password is incorrect or the private key cannot be decrypted.
+        ValueError: If the delimiter is not found or preceded by an escape sequence.
 
     Returns:
         List[bytes]: A list of decrypted chunks of data.
