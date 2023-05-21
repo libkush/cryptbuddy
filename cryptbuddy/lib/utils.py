@@ -51,7 +51,7 @@ def info(*args):
 
     """
     msg = " ".join(str(arg) for arg in args)
-    info = typer.style(f"INFO: {msg}", fg=typer.colors.BLUE, bold=True)
+    info = typer.style(f"INFO: {msg}", fg=typer.colors.BLUE)
     typer.echo(info)
 
 
