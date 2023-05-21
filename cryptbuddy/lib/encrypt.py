@@ -70,12 +70,8 @@ def asymmetric_encrypt(users: List[str], file: Path):
 
     # Serialize the encrypted symmetric keys and prepend it
     # using a delimiter
-    delimiter = b'\xFF\xFF\xFF\xFF'
-    escape_sequence = b'\xAA\xAA\xAA\xAA'
-
     packed_keys = dumps(encrypted_symmetric_keys)
     packed_keys = packed_keys.replace(delimiter, escape_sequence + delimiter)
-
     chunks.insert(0, delimiter)
     chunks.insert(0, packed_keys)
 

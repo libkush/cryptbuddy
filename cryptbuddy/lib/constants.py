@@ -17,3 +17,5 @@ noncesize = secret.SecretBox.NONCE_SIZE
 all = (kdf, ops, mem,
        keysize, chunksize, macsize)
 bytelist = List[bytes]
+delimiter = b'\xFF\xFF\xFF\xFF'
+escape_sequence = b'\xAA\xAA\xAA\xAA'

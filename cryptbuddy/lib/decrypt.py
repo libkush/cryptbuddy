@@ -4,6 +4,7 @@ from cryptbuddy.lib.file_io import cache_dir, shred_file
 from cryptbuddy.lib.key_io import AppPrivateKey
 from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
 from cryptbuddy.lib.utils import info
+from cryptbuddy.lib.constants import *
 from msgpack import loads
 from nacl.public import SealedBox
 
@@ -39,9 +40,6 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
 
     # Create a sealed box with the private key
     unseal_box = SealedBox(private_key)
-
-    delimiter = b'\xFF\xFF\xFF\xFF'
-    escape_sequence = b'\xAA\xAA\xAA\xAA'
 
     # Read the serialized keys before the first newline
     with open(file, "rb") as infile:
