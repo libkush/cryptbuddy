@@ -64,11 +64,10 @@ def shred(paths: Annotated[List[Path], typer.Argument(
                     shred_file(file)
             path.rmdir()
             success(f"All files in {path} shredded")
-            return
-
-        # Shred the file
-        shred_file(path)
-        success(f"{path} shredded")
+        else:
+            # Shred the file
+            shred_file(path)
+            success(f"{path} shredded")
 
 
 @app.command()
@@ -126,17 +125,17 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                     write_chunks(chunks, file.with_suffix(suffix+".crypt"))
                     success(f"{file} encrypted")
             success(f"All files in the {path} encrypted")
-            return
 
-        # Encrypt the file
-        try:
-            chunks = asymmetric_encrypt(user, path)
-        except Exception as e:
-            error(e)
+        else:
+            # Encrypt the file
+            try:
+                chunks = asymmetric_encrypt(user, path)
+            except Exception as e:
+                error(e)
 
-        suffix = path.suffix
-        write_chunks(chunks, path.with_suffix(suffix+".crypt"))
-        success(f"{path} encrypted")
+            suffix = path.suffix
+            write_chunks(chunks, path.with_suffix(suffix+".crypt"))
+            success(f"{path} encrypted")
 
 
 @app.command()
@@ -155,14 +154,15 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
     Decrypt a file using your private key
     """
 
-    for path in paths:
-        private_key_path = Path(f"{config_dir}/private.key")
-        if not private_key_path.exists():
-            error("Private key not found")
+    private_key_path = Path(f"{config_dir}/private.key")
+    if not private_key_path.exists():
+        error("Private key not found")
 
-        # Get your private key object from config directory
-        private_key_object = AppPrivateKey.from_file(
-            private_key_path)
+    # Get your private key object from config directory
+    private_key_object = AppPrivateKey.from_file(
+        private_key_path)
+
+    for path in paths:
 
         if path.is_dir():
             # Decrypt the directory
@@ -182,19 +182,20 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
             success(f"All files in the {path} decrypted")
             return
 
-        # Decrypt the file
-        try:
-            chunks = asymmetric_decrypt(path, password, private_key_object)
-        except Exception as e:
-            error(e)
-
-        # Write the decrypted chunks to a file
-        if path.suffix == ".crypt":
-            write_chunks(chunks, path.stem)
         else:
-            write_chunks(chunks, path.with_suffix(".dec"))
+            # Decrypt the file
+            try:
+                chunks = asymmetric_decrypt(path, password, private_key_object)
+            except Exception as e:
+                error(e)
 
-        success(f"{path} decrypted")
+            # Write the decrypted chunks to a file
+            if path.suffix == ".crypt":
+                write_chunks(chunks, path.stem)
+            else:
+                write_chunks(chunks, path.with_suffix(".dec"))
+
+            success(f"{path} decrypted")
 
 
 if __name__ == "__main__":
