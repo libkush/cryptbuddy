@@ -76,8 +76,6 @@ def asymmetric_encrypt(users: List[str], file: Path):
     packed_keys = dumps(encrypted_symmetric_keys)
     packed_keys = packed_keys.replace(delimiter, escape_sequence + delimiter)
 
-    print(packed_keys)
-
     chunks.insert(0, delimiter)
     chunks.insert(0, packed_keys)
 

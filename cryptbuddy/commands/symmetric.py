@@ -93,7 +93,6 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
                         chunks = symmetric_decrypt(file, password)
                         if file.suffix == ".crypt":
                             decrypted_path = file.with_suffix("")
-                            print(decrypted_path)
                         else:
                             decrypted_path = file.with_suffix(".dec")
                         write_chunks(chunks, decrypted_path)
