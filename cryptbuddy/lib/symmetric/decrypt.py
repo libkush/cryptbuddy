@@ -4,6 +4,8 @@ from cryptbuddy.lib.constants import *
 from nacl import pwhash, secret
 from nacl.bindings import sodium_increment
 
+from cryptbuddy.lib.utils import info
+
 
 def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> bytelist:
     """
@@ -28,6 +30,8 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> by
         The file must have been encrypted using the corresponding `symmetric_encrypt` function.
 
     """
+
+    info(f"Decrypting {file} symmetrically")
 
     # Check if the file exists and if the password or key is provided
     if not file.exists():
