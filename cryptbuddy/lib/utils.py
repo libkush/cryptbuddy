@@ -1,15 +1,23 @@
 import typer
 from tabulate import tabulate
+from typing import Iterable, List
 
 
 def success(*args: object):
     """
-    Display a success message.
+    Prints a success message with green color and bold formatting.
 
-    Args:
-        *args (object): The success message(s).
+    Parameters
+    ----------
+    *args : `object`
+        The message or objects to be displayed as the success message.
+
+    Returns
+    -------
+    `None`
 
     """
+    # Convert arguments to a space-separated string
     msg = " ".join(str(arg) for arg in args)
     success = typer.style(f"SUCCESS: {msg}", fg=typer.colors.GREEN, bold=True)
     typer.echo(success)
@@ -17,12 +25,19 @@ def success(*args: object):
 
 def warning(*args: object):
     """
-    Display a warning message.
+    Prints a warning message with yellow color and bold formatting.
 
-    Args:
-        *args (object): The warning message(s).
+    Parameters
+    ----------
+    *args : `object`
+        The message or objects to be displayed as the warning message.
+
+    Returns
+    -------
+    `None`
 
     """
+    # Convert arguments to a space-separated string
     msg = " ".join(str(arg) for arg in args)
     warning = typer.style(f"WARNING: {msg}", fg=typer.colors.YELLOW, bold=True)
     typer.echo(warning)
@@ -30,12 +45,24 @@ def warning(*args: object):
 
 def error(*args: object):
     """
-    Display an error message and raise a typer.Exit exception.
+    Prints an error message with red color and bold formatting, and raises a `typer.Exit` exception.
 
-    Args:
-        *args (object): The error message(s).
+    Parameters
+    ----------
+    *args : `object`
+        The message or objects to be displayed as the error message.
+
+    Returns
+    -------
+    `None`
+
+    Raises
+    ------
+    `typer.Exit`
+        Always raises a `typer.Exit` exception with exit code 1.
 
     """
+    # Convert arguments to a space-separated string
     msg = " ".join(str(arg) for arg in args)
     error = typer.style(f"ERROR: {msg}", fg=typer.colors.RED, bold=True)
     typer.echo(error)
@@ -44,24 +71,38 @@ def error(*args: object):
 
 def info(*args):
     """
-    Display an info message.
+    Prints an informational message with blue color.
 
-    Args:
-        *args (object): The info message(s).
+    Parameters
+    ----------
+    *args : `object`
+        The message or objects to be displayed as the informational message.
+
+    Returns
+    -------
+    `None`
 
     """
+    # Convert arguments to a space-separated string
     msg = " ".join(str(arg) for arg in args)
     info = typer.style(f"INFO: {msg}", fg=typer.colors.BLUE)
     typer.echo(info)
 
 
-def print_table(records, table_data):
+def print_table(records: Iterable, table_data: List[List]):
     """
-    Print tabular data in a formatted table.
+    Prints a table with the provided records using the tabulate library.
 
-    Args:
-        records: The records to be displayed in the table.
-        table_data: The data structure containing the table data.
+    Parameters
+    ----------
+    records : `Iterable`
+        An iterable containing the records to be displayed in the table.
+    table_data : `List[List]`
+        A list of lists representing the data to be displayed in the table. Each inner list represents a row in the table.
+
+    Returns
+    -------
+    `None`
 
     """
     for record in records:

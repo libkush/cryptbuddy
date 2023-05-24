@@ -11,38 +11,44 @@ from nacl import utils
 from nacl.public import PublicKey, SealedBox
 
 
-def asymmetric_encrypt(users: List[str], file: Path):
+def asymmetric_encrypt(users: List[str], file: Path) -> List[bytes]:
     """
-    Encrypts a file using asymmetric encryption for multiple users.
+    Encrypts a file asymmetrically for multiple users. This function generates 
+    a random symmetric key, encrypts it with the public keys of the specified 
+    users, and stores the encrypted symmetric keys in the file. The file is then 
+    symmetrically encrypted using the symmetric key, and the encrypted symmetric 
+    keys are stored in the file as well.
 
-    This function encrypts a file using asymmetric encryption with the public keys of multiple users.
-    It retrieves the public keys from a keychain and encrypts the file symmetrically with a randomly
-    generated symmetric key. The symmetric key is then encrypted with each user's public key.
+    Parameters
+    ----------
+    users : `List[str]`
+        The list of users for whom the file is encrypted.
+    file : `Path`
+        The path to the file to be encrypted.
 
-    Args:
-        user (List[str]): A list of usernames for whom the file will be encrypted.
-        file (Path): The path to the file to be encrypted.
+    Returns
+    -------
+    `List[bytes]`
+        A list of encrypted data chunks.
 
-    Raises:
-        Exception: If no public keys are found in the keychain.
+    Raises
+    ------
+    `Exception`
+        If no public keys are found.
 
-    Returns:
-        List[bytes]: A list of encrypted chunks of data.
-
-    Note:
-        The file can be decrypted using the corresponding `asymmetric_decrypt` function.
+    Notes
+    -----
+    The file must be decrypted using the corresponding `asymmetric_decrypt` function.
 
     """
 
     info(f"Encrypting {file} for {users}")
 
-    # Initialize the keychain
     db = Keychain()
 
-    # Get the public keys of the users from the keychain
     public_keys_packed = []
     for u in users:
-        public_keys_packed.append(db.get_key(name=u))
+        public_keys_packed.append(db.get_key(name=u).packed)
     if len(public_keys_packed) == 0:
         raise Exception("No public keys found")
 
@@ -75,5 +81,4 @@ def asymmetric_encrypt(users: List[str], file: Path):
     chunks.insert(0, delimiter)
     chunks.insert(0, packed_keys)
 
-    # Return the encrypted chunks
     return chunks

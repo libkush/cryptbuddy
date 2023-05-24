@@ -1,42 +1,54 @@
 from pathlib import Path
+from typing import List
 
 from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.utils import info
 from nacl import secret, utils
 from nacl.bindings import sodium_increment
 
-from cryptbuddy.lib.utils import info
 
-
-def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> bytelist:
+def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> List[bytes]:
     """
-    Encrypts a file using symmetric encryption with a password or key.
+    Encrypts a file symmetrically using a password or key. The file is
+    encrypted in chunks of given size, and the salt, ops, mem, and nonce
+    are prepended to the encrypted data.
 
-    This function reads a file and encrypts its contents using symmetric encryption.
-    It requires either a password or a key for encryption.
+    Parameters
+    ----------
+    file : `Path`
+        The path to the file to be encrypted.
+    password : `str`, optional
+        The password used for encryption (default is `None`).
+    key : `bytes`, optional
+        The key used for encryption (default is `None`).
 
-    Args:
-        file (Path): The path to the file to be encrypted.
-        password (str, optional): The password used for encryption. Defaults to None.
-        key (bytes, optional): The key used for encryption. Defaults to None.
+    Returns
+    -------
+    `List[bytes]`
+        A list of encrypted data chunks.
 
-    Returns:
-        List[bytes]: A list of encrypted chunks of data.
+    Raises
+    ------
+    `FileNotFoundError`
+        If the specified file does not exist.
+    `ValueError`
+        If neither a password nor a key is provided.
+    `Exception`
+        If an error occurs during encryption.
 
-    Raises:
-        FileNotFoundError: If the specified file does not exist.
-        ValueError: If neither a password nor a key is provided.
+    Note
+    ----
+    The file must be decrypted using the corresponding `symmetric_decrypt` function.
 
     """
 
     info(f"Encrypting {file} symmetrically")
 
-    # Check if the file exists and if the password or key is provided
     if not file.exists():
         raise FileNotFoundError("File does not exist")
     if not password and not key:
         raise ValueError("Password or key must be provided")
 
-    # Generate the salt and nonce
     salt = utils.random(saltbytes)
     nonce = utils.random(noncesize)
     encodedOps = str(ops).encode(encoding='UTF-8')
@@ -47,7 +59,6 @@ def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> by
         key = kdf(keysize, password.encode(),
                   salt, opslimit=ops, memlimit=mem)
 
-    # Create the box and empty list for the chunks
     box = secret.SecretBox(key)
     outchunks = []
 
@@ -67,7 +78,10 @@ def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> by
             chunk = infile.read(chunksize)
             if len(chunk) == 0:
                 break
-            outchunk = box.encrypt(chunk, nonce).ciphertext
+            try:
+                outchunk = box.encrypt(chunk, nonce).ciphertext
+            except Exception as e:
+                raise Exception("Error during encryption") from e
             assert len(outchunk) == len(chunk) + macsize
             outchunks.append(outchunk)
             nonce = sodium_increment(nonce)

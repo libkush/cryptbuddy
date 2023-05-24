@@ -8,19 +8,22 @@ from nacl.public import PrivateKey
 
 
 class KeyMeta:
-    """   
-    Represents metadata associated with a cryptographic key.
+    """
+    Metadata associated with a CryptBuddy key.
 
-    This class is used to store metadata information, such as the name and email address,
-    associated with a cryptographic key.
+    Parameters
+    ----------
+    name : `str`
+        Name associated with the key.
+    email : `str`
+        Email associated with the key.
 
-    Args:
-        name (str): The name associated with the key.
-        email (str): The email address associated with the key.
-
-    Attributes:
-        name (str): The name associated with the key.
-        email (str): The email address associated with the key.
+    Attributes
+    ----------
+    name : `str`
+        Name associated with the key.
+    email : `str`
+        Email associated with the key.
 
     """
 
@@ -31,16 +34,17 @@ class KeyMeta:
 
 class BaseKey:
     """
-    Represents a base cryptographic key.
+    Base class for CryptBuddy keys.
 
-    This class serves as the base class for cryptographic key objects. It contains the
-    metadata associated with the key.
+    Parameters
+    ----------
+    meta : `KeyMeta`
+        Metadata associated with the key.
 
-    Args:
-        meta (KeyMeta): The metadata associated with the key.
-
-    Attributes:
-        meta (KeyMeta): The metadata associated with the key.
+    Attributes
+    ----------
+    meta : `KeyMeta`
+        Metadata associated with the key.
 
     """
 
@@ -50,24 +54,47 @@ class BaseKey:
 
 class AppPrivateKey(BaseKey):
     """
-    Represents an application-specific private key.
+    Application-specific private key in CryptBuddy.
 
-    This class extends the `BaseKey` class and provides additional functionality specific
-    to private keys used in the application.
+    Parameters
+    ----------
+    meta : `KeyMeta`
+        Metadata associated with the private key.
+    chunks : `List[bytes]`
+        Encrypted chunks of the private key.
 
-    Args:
-        meta (KeyMeta): The metadata associated with the private key.
-        chunks (list): The encrypted key chunks.
+    Attributes
+    ----------
+    meta : `KeyMeta`
+        Metadata associated with the private key.
+    chunks : `List[bytes]`
+        Encrypted chunks of the private key.
+    data : `dict`
+        Data dictionary representing the private key.
+    packed : `bytes`
+        Packed representation of the private key.
 
-    Attributes:
-        meta (KeyMeta): The metadata associated with the private key.
-        chunks (list): The encrypted key chunks.
-        data (dict): The serialized data representation of the private key.
-        packed (bytes): The packed data representation of the private key.
+    Methods
+    -------
+    save(path: `Path`) -> `None`
+        Save the private key to a file.
+    decrypted_key_chunks(password: `str`) -> `List[bytes]`
+        Decrypt and retrieve the encrypted chunks of the private key.
+    decrypted_key(password: `str`) -> `PrivateKey`
+        Decrypt and retrieve the NaCl private key.
+
+    Class Methods
+    -------------
+    from_original_key(meta: `KeyMeta`, key: `PrivateKey`, password: `str`) -> `AppPrivateKey`:
+        Create an AppPrivateKey instance from an original PrivateKey.
+    from_packed(packed: `bytes`) -> `AppPrivateKey`:
+        Create an AppPrivateKey instance from a packed representation.
+    from_file(file: `Path`) -> `AppPrivateKey`:
+        Create an AppPrivateKey instance from a key file.
 
     """
 
-    def __init__(self, meta: KeyMeta, chunks: list):
+    def __init__(self, meta: KeyMeta, chunks: List[bytes]):
         super().__init__(meta)
         self.chunks = chunks
         self.data = {
@@ -76,7 +103,7 @@ class AppPrivateKey(BaseKey):
             "email": meta.email,
             "chunks": chunks
         }
-        self.packed = dumps(self.data)
+        self.packed: bytes = dumps(self.data)
 
     def __repr__(self):
         return f"<PrivateKey {self.meta.name} {self.meta.email}>"
@@ -86,14 +113,17 @@ class AppPrivateKey(BaseKey):
 
     def save(self, path: Path):
         """
-        Save the packed private key data to a file.
+        Save the private key to a file.
 
-        Args:
-            path (Path): The path to the file where the private key will be saved.
+        Parameters
+        ----------
+        path : `Path`
+            The path to the file where the private key will be saved.
 
-        Raises:
-            FileExistsError: If the file already exists.
-
+        Raises
+        ------
+        `FileExistsError`
+            If the file already exists.
         """
         if path.exists():
             raise FileExistsError("File already exists")
@@ -103,15 +133,21 @@ class AppPrivateKey(BaseKey):
     @classmethod
     def from_original_key(cls, meta: KeyMeta, key: PrivateKey, password: str) -> "AppPrivateKey":
         """
-        Create an `AppPrivateKey` object from an original private key.
+        Create an AppPrivateKey instance from an original NaCl PrivateKey.
 
-        Args:
-            meta (KeyMeta): The metadata associated with the private key.
-            key (PrivateKey): The original private key.
-            password (str): The password to encrypt the private key.
+        Parameters
+        ----------
+        meta : `KeyMeta`
+            Metadata associated with the private key.
+        key : `PrivateKey`
+            NaCl PrivateKey object.
+        password : `str`
+            Password to encrypt the private key.
 
-        Returns:
-            AppPrivateKey: The created `AppPrivateKey` object.
+        Returns
+        -------
+        `AppPrivateKey`
+            An AppPrivateKey instance.
 
         """
         temp_file = Path(f"{cache_dir}/private.key")
@@ -123,13 +159,17 @@ class AppPrivateKey(BaseKey):
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPrivateKey":
         """
-        Create an `AppPrivateKey` object from packed data.
+        Create an AppPrivateKey instance from a packed representation.
 
-        Args:
-            packed (bytes): The packed data representing the private key.
+        Parameters
+        ----------
+        packed : `bytes`
+            Packed bytes of the private key data.
 
-        Returns:
-            AppPrivateKey: The created `AppPrivateKey` object.
+        Returns
+        -------
+        `AppPrivateKey`
+            An AppPrivateKey instance.
 
         """
         data = loads(packed)
@@ -139,16 +179,22 @@ class AppPrivateKey(BaseKey):
     @classmethod
     def from_file(cls, file: Path) -> "AppPrivateKey":
         """
-        Create an `AppPrivateKey` object from a file.
+        Create an AppPrivateKey instance from a file.
 
-        Args:
-            file (Path): The path to the file containing the packed private key.
+        Parameters
+        ----------
+        file : `Path`
+            Path to the file containing the packed private key.
 
-        Returns:
-            AppPrivateKey: The created `AppPrivateKey` object.
+        Returns
+        -------
+        `AppPrivateKey`
+            An AppPrivateKey instance.
 
-        Raises:
-            FileNotFoundError: If the file does not exist.
+        Raises
+        ------
+        `FileNotFoundError`
+            If the file does not exist.
 
         """
         if not (file.exists() or file.is_file()):
@@ -157,15 +203,19 @@ class AppPrivateKey(BaseKey):
             encoded_bytes = file.read()
         return AppPrivateKey.from_packed(encoded_bytes)
 
-    def decrypted_key_chunks(self, password: str):
+    def decrypted_key_chunks(self, password: str) -> List[bytes]:
         """
-        Decrypt the encrypted key chunks using the provided password.
+        Decrypt and retrieve the decrypted chunks of the private key.
 
-        Args:
-            password (str): The password to decrypt the private key.
+        Parameters
+        ----------
+        password : `str`
+            Password to decrypt the private key.
 
-        Returns:
-            list: The decrypted key chunks.
+        Returns
+        -------
+        `List[bytes]`
+            Decrypted chunks of the private key.
 
         """
         temp_file = Path(f"{cache_dir}/private.key.crypt")
@@ -174,15 +224,19 @@ class AppPrivateKey(BaseKey):
         shred_file(temp_file)
         return chunks
 
-    def decrypted_key(self, password: str):
+    def decrypted_key(self, password: str) -> PrivateKey:
         """
-        Get the decrypted private key using the provided password.
+        Decrypt and retrieve the full private key.
 
-        Args:
-            password (str): The password to decrypt the private key.
+        Parameters
+        ----------
+        password : `str`
+            Password to decrypt the private key.
 
-        Returns:
-            PrivateKey: The decrypted private key.
+        Returns
+        -------
+        `PrivateKey`
+            The decrypted NaCl private key.
 
         """
         chunks = self.decrypted_key_chunks(password)
@@ -191,33 +245,50 @@ class AppPrivateKey(BaseKey):
 
 class AppPublicKey(BaseKey):
     """
-    Represents an application-specific public key.
+    Application-specific public key in CryptBuddy.
 
-    This class extends the `BaseKey` class and provides additional functionality specific
-    to public keys used in the application.
+    Parameters
+    ----------
+    meta : `KeyMeta`
+        Metadata associated with the public key.
+    key : `bytes`
+        Public key bytes.
 
-    Args:
-        meta (KeyMeta): The metadata associated with the public key.
-        key (bytes): The encoded NaCl public key.
+    Attributes
+    ----------
+    meta : `KeyMeta`
+        Metadata associated with the public key.
+    key : `bytes`
+        Public key bytes.
+    data : `dict`
+        Data dictionary representing the public key.
+    packed : `bytes`
+        Packed bytes of the public key data.
 
-    Attributes:
-        meta (KeyMeta): The metadata associated with the public key.
-        key (bytes): The encoded NaCl public key.
-        data (dict): The serialized data representation of the public key.
-        packed (bytes): The packed data representation of the public key.
+    Methods
+    -------
+    save(file: `Path`)
+        Save the public key to a file.
+
+    Class Methods
+    -------------
+    from_packed(packed: `bytes`) -> "AppPublicKey":
+        Create an AppPublicKey instance from a packed representation.
+    from_file(file: `Path`) -> "AppPublicKey":
+        Create an AppPublicKey instance from a file.
 
     """
 
     def __init__(self, meta: KeyMeta, key: bytes):
         super().__init__(meta)
-        self.key = key
+        self.key: bytes = key
         self.data = {
             "type": "public",
             "name": meta.name,
             "email": meta.email,
             "key": key
         }
-        self.packed = dumps(self.data)
+        self.packed: bytes = dumps(self.data)
 
     def __repr__(self):
         return f"<PublicKey {self.meta.name} {self.meta.email}>"
@@ -225,16 +296,19 @@ class AppPublicKey(BaseKey):
     def __str__(self):
         return f"<PublicKey {self.meta.name} {self.meta.email}>"
 
-    def save(self, file: Path):
+    def save(self, file: Path) -> None:
         """
-        Save the serialized public key data to a file.
+        Save the public key to a file.
 
-        Args:
-            file (Path): The path to the file where the public key will be saved.
+        Parameters
+        ----------
+        file : `Path`
+            The path to the file where the public key will be saved.
 
-        Raises:
-            FileExistsError: If the file already exists.
-
+        Raises
+        ------
+        `FileExistsError`
+            If the file already exists.
         """
         if file.exists():
             raise FileExistsError("File already exists")
@@ -244,13 +318,17 @@ class AppPublicKey(BaseKey):
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPublicKey":
         """
-        Create an `AppPublicKey` object from packed data.
+        Create an AppPublicKey instance from a packed representation.
 
-        Args:
-            packed (bytes): The packed data representing the public key.
+        Parameters
+        ----------
+        packed : `bytes`
+            Packed data of the public key.
 
-        Returns:
-            AppPublicKey: The created `AppPublicKey` object.
+        Returns
+        -------
+        `AppPublicKey`
+            An AppPublicKey instance.
 
         """
         data = loads(packed)
@@ -260,16 +338,22 @@ class AppPublicKey(BaseKey):
     @classmethod
     def from_file(cls, file: Path) -> "AppPublicKey":
         """
-        Create an `AppPublicKey` object from a file.
+        Create an AppPublicKey instance from a file.
 
-        Args:
-            file (Path): The path to the file containing the packed public key.
+        Parameters
+        ----------
+        file : `Path`
+            Path to the file containing the packed public key.
 
-        Returns:
-            AppPublicKey: The created `AppPublicKey` object.
+        Returns
+        -------
+        `AppPublicKey`
+            An AppPublicKey instance.
 
-        Raises:
-            FileNotFoundError: If the file does not exist.
+        Raises
+        ------
+        `FileNotFoundError`
+            If the file does not exist.
 
         """
         if not (file.exists() or file.is_file()):

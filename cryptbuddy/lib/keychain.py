@@ -1,13 +1,31 @@
 import sqlite3
+from typing import Tuple
 
 from cryptbuddy.lib.file_io import *
+from cryptbuddy.lib.key_io import AppPublicKey
 
 create_directories()
 
 
 class Keychain:
     """
-    Represents a keychain that stores keys in an SQLite database.
+    Keychain in CryptBuddy.
+
+    Methods
+    -------
+    __init__()
+        Initialize the Keychain.
+    add_key(key: `AppPublicKey`)
+        Add a key to the keychain.
+    get_key(name: `str = None`, id: `int = None`) -> AppPublicKey
+        Retrieve a key from the keychain.
+    get_names() -> `List[Tuple[int, str]]`
+        Retrieve the names of keys in the keychain.
+    delete_key(name: `str = None`, id: `int = None`)
+        Delete a key from the keychain.
+    close()
+        Close the keychain connection.
+
     """
 
     def __init__(self):
@@ -29,34 +47,43 @@ class Keychain:
         self.conn = conn
         self.c = c
 
-    def add_key(self, name: str, key: bytes):
+    def add_key(self, key: AppPublicKey) -> None:
         """
         Add a key to the keychain.
 
-        Args:
-            name (str): The name associated with the key.
-            key (bytes): The key to be added.
+        Parameters
+        ----------
+        key : `AppPublicKey`
+            Public key object.
 
         """
-        info(f"Adding key {name} to keychain")
+        info(f"Adding key {key.meta.name} to keychain")
         self.c.execute(
-            "INSERT INTO keys (name, key) VALUES (?, ?)", (name, key))
+            "INSERT INTO keys (name, key) VALUES (?, ?)", (key.meta.name, key.packed))
         self.conn.commit()
 
-    def get_key(self, name: str = None, id: int = None):
+    def get_key(self, name: str = None, id: int = None) -> AppPublicKey:
         """
         Retrieve a key from the keychain.
 
-        Args:
-            name (str): The name associated with the key.
-            id (int): The ID of the key.
+        Parameters
+        ----------
+        name : `str`, optional
+            Name of the key.
+        id : `int`, optional
+            ID of the key.
 
-        Returns:
-            bytes: The retrieved key.
+        Returns
+        -------
+        `AppPublicKey`
+            Public key object.
 
-        Raises:
-            ValueError: If neither name nor ID is specified.
-            TypeError: If the key with the specified name or ID does not exist.
+        Raises
+        ------
+        `ValueError`
+            If neither name nor ID is specified.
+        `TypeError`
+            If the key is not found.
 
         """
         if not name and not id:
@@ -73,29 +100,36 @@ class Keychain:
         if result is None:
             raise TypeError("Key not found")
 
-        return result[0]
+        return AppPublicKey.from_packed(result[0])
 
-    def get_names(self):
+    def get_names(self) -> List[Tuple[int, str]]:
         """
-        Retrieve the names and IDs of all keys in the keychain.
+        Retrieve all the names of keys in the keychain.
 
-        Returns:
-            list: A list of tuples containing the ID and name of each key.
+        Returns
+        -------
+        `List[Tuple[int, str]]`
+            List of tuples containing key IDs and names.
 
         """
         self.c.execute("SELECT id, name FROM keys")
         return self.c.fetchall()
 
-    def delete_key(self, name: str = None, id: int = None):
+    def delete_key(self, name: str = None, id: int = None) -> None:
         """
         Delete a key from the keychain.
 
-        Args:
-            name (str): The name associated with the key.
-            id (int): The ID of the key.
+        Parameters
+        ----------
+        name : `str`, optional
+            Name of the key.
+        id : `int`, optional
+            ID of the key.
 
-        Raises:
-            ValueError: If neither name nor ID is specified.
+        Raises
+        ------
+        `ValueError`
+            If neither name nor ID is specified.
 
         """
         if not name and not id:
@@ -110,7 +144,7 @@ class Keychain:
 
         self.conn.commit()
 
-    def close(self):
+    def close(self) -> None:
         """
         Close the keychain connection.
 

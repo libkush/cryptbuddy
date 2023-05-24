@@ -1,39 +1,48 @@
 from pathlib import Path
+from typing import List
 
 from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.utils import info
 from nacl import pwhash, secret
 from nacl.bindings import sodium_increment
 
-from cryptbuddy.lib.utils import info
 
-
-def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> bytelist:
+def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> List[bytes]:
     """
-    Decrypts a file using symmetric encryption with a password or key.
+    Decrypts a file symmetrically using a password or key.
 
-    This function reads an encrypted file and decrypts its contents using symmetric encryption.
-    It requires either a password or a key for decryption.
+    Parameters
+    ----------
+    file : `Path`
+        The path to the file to be decrypted.
+    password : `str`, optional
+        The password used for decryption (default is `None`).
+    key : `bytes`, optional
+        The key used for decryption (default is `None`).
 
-    Args:
-        file (Path): The path to the encrypted file.
-        password (str, optional): The password used for decryption. Defaults to None.
-        key (bytes, optional): The key used for decryption. Defaults to None.
+    Returns
+    -------
+    `List[bytes]`
+        A list of decrypted data chunks.
 
-    Returns:
-        List[bytes]: A list of decrypted chunks of data.
+    Raises
+    ------
+    `FileNotFoundError`
+        If the specified file does not exist.
+    `ValueError`
+        If neither a password nor a key is provided.
+    `Exception`
+        If an error occurs during decryption.
 
-    Raises:
-        FileNotFoundError: If the specified file does not exist.
-        ValueError: If neither a password nor a key is provided.
-
-    Note:
-        The file must have been encrypted using the corresponding `symmetric_encrypt` function.
+    Note
+    -----
+    This function is used to decrypt files that were symmetrically encrypted
+    using the `symmetric_encrypt` function.
 
     """
 
     info(f"Decrypting {file} symmetrically")
 
-    # Check if the file exists and if the password or key is provided
     if not file.exists():
         raise FileNotFoundError("File does not exist")
     if not password and not key:
@@ -55,7 +64,6 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> by
             key = kdf(keysize, password.encode(),
                       salt, opslimit=ops, memlimit=mem)
 
-        # Create the box
         box = secret.SecretBox(key)
         _newline = infile.read(1)
 
@@ -64,7 +72,10 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> by
             rchunk = infile.read(chunksize + macsize)
             if len(rchunk) == 0:
                 break
-            dchunk = box.decrypt(rchunk, nonce)
+            try:
+                dchunk = box.decrypt(rchunk, nonce)
+            except Exception as e:
+                raise Exception("Error during decryption") from e
             assert len(dchunk) == len(rchunk) - macsize
             outchunks.append(dchunk)
             nonce = sodium_increment(nonce)

@@ -1,5 +1,3 @@
-from typing import List
-
 from nacl import pwhash, secret
 
 """
@@ -16,6 +14,5 @@ saltbytes = pwhash.argon2i.SALTBYTES
 noncesize = secret.SecretBox.NONCE_SIZE
 all = (kdf, ops, mem,
        keysize, chunksize, macsize)
-bytelist = List[bytes]
 delimiter = b'\xFF\xFF\xFF\xFF'
 escape_sequence = b'\xAA\xAA\xAA\xAA'
