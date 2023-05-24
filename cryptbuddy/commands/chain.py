@@ -12,16 +12,14 @@ chain = Keychain()
 
 
 @app.command()
-def add(key: Annotated[Path, typer.Argument(help="Public key file path", exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True)]):
+def add(key: Annotated[Path, typer.Argument(help="Path to the public key", exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True)]):
     """
     Add a key to your keychain
     """
 
-    # Create the public key object from file
     public_key = AppPublicKey.from_file(key)
 
-    # Add the packed key to the keychain
-    chain.add_key(public_key.meta.name, public_key.packed)
+    chain.add_key(public_key)
     success(f"{public_key.meta.name}'s public key added to the keychain")
 
 
@@ -34,7 +32,6 @@ def delete(name: Annotated[Optional[str], typer.Argument(help="Name of the user 
     if not name and not id:
         error("Please specify either name or ID")
 
-    # Delete the key from the keychain
     if id:
         chain.delete_key(id=id)
         success(f"Key with ID {id} deleted from the keychain")
@@ -49,10 +46,7 @@ def list():
     """
     List all the keys in your keychain
     """
-    # Get the names of all the keys
     keys = chain.get_names()
-
-    # Print the table
     print_table(keys, [['ID', 'Name']])
 
 

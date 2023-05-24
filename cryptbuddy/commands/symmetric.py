@@ -14,7 +14,7 @@ app = typer.Typer()
 
 @app.command()
 def encrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Path of the file/decrypt to encrypt",
+    help="Path to the file(s) or folder(s) to encrypt",
     exists=True,
     readable=True,
     writable=True,
@@ -26,10 +26,9 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
 ],
         shred: Annotated[Optional[bool], typer.Option(help="Shred the original file after encryption")] = False):
     """
-    Encrypt file(s) using a password
+    Encrypt file(s) or folder(s) using a password
     """
 
-    # Check password strength
     stats = PasswordStats(password).strength()
     if stats < 0.3:
         warning("Password is weak!")
@@ -37,8 +36,7 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
     for path in paths:
 
         if path.is_dir():
-            # Encrypt all files in directory
-            for file in path.iterdir():
+            for file in path.rglob("*"):
                 if file.is_file():
                     suffix = file.suffix
                     try:
@@ -48,10 +46,7 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                     except Exception as e:
                         error(e)
                     success(f"{file} encrypted")
-                    # Shred original file if specified
-                    if shred:
-                        shred_file(file)
-                        info(f"{file} shredded")
+                    shred_file(file)
             success(f"All files in {path} encrypted")
 
         else:
@@ -63,7 +58,6 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                 error(e)
             success(f"{path} encrypted")
 
-            # Shred file if specified
             if shred:
                 shred_file(path)
                 info(f"{path} shredded")
@@ -71,7 +65,7 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
 
 @app.command()
 def decrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Path of the file to decrypt",
+    help="Path to the file(s) or folder(s) to decrypt",
     exists=True,
     readable=True,
     writable=True,
@@ -82,14 +76,13 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
 ],
         shred: Annotated[Optional[bool], typer.Option(help="Shred the encrypted file after decryption")] = False):
     """
-    Decrypt a file using a password
+    Decrypt file(s) or folder(s) using a password
     """
 
     for path in paths:
 
         if path.is_dir():
-            # Decrypt all files in directory
-            for file in path.iterdir():
+            for file in path.rglob("*"):
                 if file.is_file():
                     try:
                         chunks = symmetric_decrypt(file, password)
@@ -101,14 +94,11 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
                     except Exception as e:
                         error(e)
                     success(f"{file} decrypted")
-                    # Shred original file if specified
-                    if shred:
-                        shred_file(file)
-                        info(f"{file} shredded")
+                    shred_file(file)
+                    info(f"{file} shredded")
             success(f"All files in {path} decrypted")
 
         else:
-            # Decrypt file symmetrically
             try:
                 chunks = symmetric_decrypt(path, password)
                 if path.suffix == ".crypt":
@@ -119,8 +109,6 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
             except Exception as e:
                 error(e)
             success(f"{path} decrypted")
-
-            # Shred file if specified
             if shred:
                 shred_file(path)
                 info(f"{path} shredded")

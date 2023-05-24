@@ -33,12 +33,10 @@ def init(name: Annotated[str, typer.Option(help="Username")],
     Initialize cryptbuddy by generating a key-pair and creating the keychain database
     """
 
-    # Check password strength
     stats = PasswordStats(password).strength()
     if stats < 0.3:
         error("Password is too weak!")
 
-    # Initialize cryptbuddy
     try:
         initialize_cryptbuddy(name, email, password)
     except Exception as e:
@@ -48,29 +46,28 @@ def init(name: Annotated[str, typer.Option(help="Username")],
 
 @app.command()
 def shred(paths: Annotated[List[Path], typer.Argument(
-    help="Path of the file to be shredded",
+    help="Paths of the file(s) or folder(s) to be shredded",
     exists=True,
     readable=True,
     resolve_path=True
 )],):
     """
-    Shred a file such that it cannot be recovered
+    Shreds files/folders such that they cannot be later recovered
     """
     for path in paths:
         if path.is_dir():
-            # Shred the directory
-            for file in path.iterdir():
+            for file in path.rglob("*"):
                 if file.is_file():
                     shred_file(file)
             path.rmdir()
             success(f"All files in {path} shredded")
         else:
-            # Shred the file
             shred_file(path)
             success(f"{path} shredded")
 
 
-@app.command()
+# TODO: Export complete data with the key chain
+@ app.command()
 def export(dir: Annotated[Path, typer.Argument(
     help="Directory to export the public key to",
     exists=True,
@@ -80,15 +77,13 @@ def export(dir: Annotated[Path, typer.Argument(
     file_okay=False
 )]):
     """
-    Export your public key to share with others
+    Export your public key file to specified directory to share with others
     """
 
-    # Check if public key exists
     public_key_path = Path(f"{config_dir}/public.key")
     if not public_key_path.exists():
         error("Public key not found")
 
-    # Copy public key to specified directory
     try:
         copyfile(public_key_path, Path(f"{dir}/public.key"))
     except Exception as e:
@@ -97,9 +92,9 @@ def export(dir: Annotated[Path, typer.Argument(
     success("File exported successfully")
 
 
-@app.command()
+@ app.command()
 def encrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Path of the file to encrypt",
+    help="Paths of the file(s) and folder(s) to encrypt",
     exists=True,
     readable=True,
     writable=True,
@@ -107,15 +102,14 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
 )],
         user: Annotated[Optional[List[str]], typer.Option()] = None,):
     """
-    Encrypt a file for one or more users in your keychain
+    Encrypt file(s) or folder(s) for one or more users from your keychain
     """
     if len(user) == 0:
         error("No users specified")
 
     for path in paths:
         if path.is_dir():
-            # Encrypt the directory
-            for file in path.iterdir():
+            for file in path.rglob("*"):
                 suffix = file.suffix
                 if file.is_file():
                     try:
@@ -123,24 +117,22 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                     except Exception as e:
                         error(e)
                     write_chunks(chunks, file.with_suffix(suffix+".crypt"))
+                    shred_file(file)
                     success(f"{file} encrypted")
             success(f"All files in the {path} encrypted")
-
         else:
-            # Encrypt the file
             try:
                 chunks = asymmetric_encrypt(user, path)
             except Exception as e:
                 error(e)
-
             suffix = path.suffix
             write_chunks(chunks, path.with_suffix(suffix+".crypt"))
             success(f"{path} encrypted")
 
 
-@app.command()
+@ app.command()
 def decrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Path of the file to decrypt",
+    help="Path to the file to decrypt",
     exists=True,
     readable=True,
     writable=True,
@@ -149,24 +141,23 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
     password: Annotated[
         str, typer.Option(
         prompt=True, hide_input=True, help="Password to decrypt your private key")]
+
+
 ):
     """
-    Decrypt a file using your private key
+    Decrypt file(s) or folder(s) encrypted with your public key
     """
 
     private_key_path = Path(f"{config_dir}/private.key")
     if not private_key_path.exists():
-        error("Private key not found")
+        error("Private key not found. Please initialize CryptBuddy")
 
-    # Get your private key object from config directory
     private_key_object = AppPrivateKey.from_file(
         private_key_path)
 
     for path in paths:
-
         if path.is_dir():
-            # Decrypt the directory
-            for file in path.iterdir():
+            for file in path.rglob("*"):
                 if file.is_file():
                     try:
                         chunks = asymmetric_decrypt(
@@ -178,24 +169,24 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
                         write_chunks(chunks, file.with_suffix(""))
                     else:
                         write_chunks(chunks, file.with_suffix(".dec"))
+                    shred_file(file)
                     success(f"{file} decrypted")
             success(f"All files in the {path} decrypted")
             return
-
         else:
-            # Decrypt the file
             try:
                 chunks = asymmetric_decrypt(path, password, private_key_object)
             except Exception as e:
                 error(e)
-
-            # Write the decrypted chunks to a file
             if path.suffix == ".crypt":
                 write_chunks(chunks, path.stem)
             else:
                 write_chunks(chunks, path.with_suffix(".dec"))
-
             success(f"{path} decrypted")
+
+# TODO: Add a command to edit details of the user
+
+# TODO: Add a command to clean up everything
 
 
 if __name__ == "__main__":
