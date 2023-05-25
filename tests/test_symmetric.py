@@ -27,7 +27,8 @@ def test_symmetric_singlefile(message, password):
         assert "SUCCESS" in encrypt_result.stdout
 
         # Delete the original file after encryption
-        file.unlink()
+        if file.exists():
+            file.unlink()
 
         # Decryption
         encrypted_file = file.with_suffix(file.suffix+'.crypt')
@@ -139,7 +140,8 @@ def test_symmetric_multipath(message, password):
         for f in dir1.iterdir():
             if not f.suffix == '.crypt':
                 f.unlink()
-        file.unlink()
+        if file.exists():
+            file.unlink()
 
         encrypted_file = file.with_suffix(file.suffix+'.crypt')
         decrypt_command = ["cb", "symmetric", "decrypt",
