@@ -21,10 +21,10 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
     resolve_path=True
 )],
     password: Annotated[
-    str, typer.Option(
-        prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt the file")
+    str, typer.Option("--password", "-p",
+                      prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt the file")
 ],
-        shred: Annotated[Optional[bool], typer.Option(help="Shred the original file after encryption")] = False):
+        shred: Annotated[Optional[bool], typer.Option("--shred", "-s", help="Shred the original file after encryption")] = True):
     """
     Encrypt file(s) or folder(s) using a password
     """
@@ -46,7 +46,9 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                     except Exception as e:
                         error(e)
                     success(f"{file} encrypted")
-                    shred_file(file)
+                    if shred:
+                        shred_file(file)
+                        info(f"{file} shredded")
             success(f"All files in {path} encrypted")
 
         else:
@@ -74,7 +76,7 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
     str, typer.Option(
         prompt=True, hide_input=True, help="Password to decrypt the file")
 ],
-        shred: Annotated[Optional[bool], typer.Option(help="Shred the encrypted file after decryption")] = False):
+        shred: Annotated[Optional[bool], typer.Option("--shred", "-s", help="Shred the encrypted file after decryption")] = True):
     """
     Decrypt file(s) or folder(s) using a password
     """
@@ -94,8 +96,9 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
                     except Exception as e:
                         error(e)
                     success(f"{file} decrypted")
-                    shred_file(file)
-                    info(f"{file} shredded")
+                    if shred:
+                        shred_file(file)
+                        info(f"{file} shredded")
             success(f"All files in {path} decrypted")
 
         else:

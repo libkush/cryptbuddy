@@ -26,9 +26,9 @@ app.add_typer(symmetric.app, name="symmetric",
 
 
 @app.command()
-def init(name: Annotated[str, typer.Option(help="Username")],
-         email: Annotated[str, typer.Option(prompt=True, confirmation_prompt=True)],
-         password: Annotated[str, typer.Option(prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt your private key")]):
+def init(name: Annotated[str, typer.Option("--name", "-u", help="Username")],
+         email: Annotated[str, typer.Option("--email", "-e", prompt=True, confirmation_prompt=True)],
+         password: Annotated[str, typer.Option("--password", "-p", prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt your private key")]):
     """
     Initialize cryptbuddy by generating a key-pair and creating the keychain database
     """
@@ -100,7 +100,7 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
     writable=True,
     resolve_path=True
 )],
-        user: Annotated[Optional[List[str]], typer.Option()] = None,):
+        user: Annotated[Optional[List[str]], typer.Option("--user", "-u")] = None,):
     """
     Encrypt file(s) or folder(s) for one or more users from your keychain
     """
@@ -130,7 +130,7 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
             success(f"{path} encrypted")
 
 
-@ app.command()
+@ app.command(rich_help_panel=True)
 def decrypt(paths: Annotated[List[Path], typer.Argument(
     help="Path to the file to decrypt",
     exists=True,
@@ -139,8 +139,8 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
     resolve_path=True)],
 
     password: Annotated[
-        str, typer.Option(
-        prompt=True, hide_input=True, help="Password to decrypt your private key")]
+        str, typer.Option("--password", "-p",
+                          prompt=True, hide_input=True, help="Password to decrypt your private key")]
 
 
 ):
