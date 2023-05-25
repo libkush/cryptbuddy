@@ -47,7 +47,7 @@ def list():
     List all the keys in your keychain
     """
     keys = chain.get_names()
-    print_table(keys, [['ID', 'Name']])
+    print_keys(keys)
 
 
 if __name__ == "__main__":

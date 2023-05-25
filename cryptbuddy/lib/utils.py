@@ -1,6 +1,7 @@
 import typer
-from tabulate import tabulate
-from typing import Iterable, List
+from rich.table import Table
+from rich.console import Console
+from typing import Iterable, List, Tuple
 
 
 def success(*args: object):
@@ -89,24 +90,26 @@ def info(*args):
     typer.echo(info)
 
 
-def print_table(records: Iterable, table_data: List[List]):
+def print_keys(records: List[Tuple[int, str]]):
     """
     Prints a table with the provided records using the tabulate library.
 
     Parameters
     ----------
-    records : `Iterable`
+    records : `List[Tuple[int, str]])`
         An iterable containing the records to be displayed in the table.
-    table_data : `List[List]`
-        A list of lists representing the data to be displayed in the table. Each inner list represents a row in the table.
 
     Returns
     -------
     `None`
 
     """
-    for record in records:
-        table_data.append(list(record))
+    console = Console()
+    table = Table(show_header=True, header_style="bold magenta")
 
-    table = tabulate(table_data, headers="firstrow", tablefmt="fancy_grid")
-    typer.echo(table)
+    table.add_column("ID")
+    table.add_column("Name")
+    for record in records:
+        table.add_row(str(record[0]), record[1])
+
+    console.print(table)
