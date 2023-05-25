@@ -3,16 +3,16 @@ from nacl import pwhash, secret
 """
 Cryptographic constants required by cryptbuddy
 """
+KDF = pwhash.argon2i.kdf
 
-chunksize = 64 * 1024
-macsize = secret.SecretBox.MACBYTES
-ops = pwhash.argon2i.OPSLIMIT_SENSITIVE
-mem = pwhash.argon2i.MEMLIMIT_SENSITIVE
-kdf = pwhash.argon2i.kdf
-keysize = secret.SecretBox.KEY_SIZE
-saltbytes = pwhash.argon2i.SALTBYTES
-noncesize = secret.SecretBox.NONCE_SIZE
-all = (kdf, ops, mem,
-       keysize, chunksize, macsize)
-delimiter = b'\xFF\xFF\xFF\xFF'
-escape_sequence = b'\xAA\xAA\xAA\xAA'
+CHUNKSIZE = 64 * 1024
+MACSIZE = secret.SecretBox.MACBYTES
+OPS = pwhash.argon2i.OPSLIMIT_SENSITIVE
+MEM = pwhash.argon2i.MEMLIMIT_SENSITIVE
+KEYSIZE = secret.SecretBox.KEY_SIZE
+SALTBYTES = pwhash.argon2i.SALTBYTES
+NONCESIZE = secret.SecretBox.NONCE_SIZE
+ALL = (KDF, OPS, MEM,
+       KEYSIZE, CHUNKSIZE, MACSIZE)
+DELIMITER = b'\xFF\xFF\xFF\xFF'
+ESCAPE_SEQUENCE = b'\xAA\xAA\xAA\xAA'

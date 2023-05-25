@@ -59,7 +59,7 @@ def asymmetric_encrypt(users: List[str], file: Path) -> List[bytes]:
         public_keys[unpacked_key.meta.name] = unpacked_key
 
     # Generate a random symmetric key
-    symmetric_key = utils.random(keysize)
+    symmetric_key = utils.random(KEYSIZE)
 
     # Encrypt the symmetric key with all the public keys
     # and store them in a dictionary with the name of the
@@ -77,8 +77,8 @@ def asymmetric_encrypt(users: List[str], file: Path) -> List[bytes]:
     # Serialize the encrypted symmetric keys and prepend it
     # using a delimiter
     packed_keys = dumps(encrypted_symmetric_keys)
-    packed_keys = packed_keys.replace(delimiter, escape_sequence + delimiter)
-    chunks.insert(0, delimiter)
+    packed_keys = packed_keys.replace(DELIMITER, ESCAPE_SEQUENCE + DELIMITER)
+    chunks.insert(0, DELIMITER)
     chunks.insert(0, packed_keys)
 
     return chunks

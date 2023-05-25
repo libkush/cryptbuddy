@@ -49,15 +49,15 @@ def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> Li
     if not password and not key:
         raise ValueError("Password or key must be provided")
 
-    salt = utils.random(saltbytes)
-    nonce = utils.random(noncesize)
-    encodedOps = str(ops).encode(encoding='UTF-8')
-    encodedMem = str(mem).encode(encoding='UTF-8')
+    salt = utils.random(SALTBYTES)
+    nonce = utils.random(NONCESIZE)
+    encodedOps = str(OPS).encode(encoding='UTF-8')
+    encodedMem = str(MEM).encode(encoding='UTF-8')
 
     # Generate the key using the password if not already provided
     if not key:
-        key = kdf(keysize, password.encode(),
-                  salt, opslimit=ops, memlimit=mem)
+        key = KDF(KEYSIZE, password.encode(),
+                  salt, opslimit=OPS, memlimit=MEM)
 
     box = secret.SecretBox(key)
     outchunks = []
@@ -75,14 +75,14 @@ def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> Li
 
         # Encrypt the file data in chunks of given size
         while 1:
-            chunk = infile.read(chunksize)
+            chunk = infile.read(CHUNKSIZE)
             if len(chunk) == 0:
                 break
             try:
                 outchunk = box.encrypt(chunk, nonce).ciphertext
             except Exception as e:
                 raise Exception("Error during encryption") from e
-            assert len(outchunk) == len(chunk) + macsize
+            assert len(outchunk) == len(chunk) + MACSIZE
             outchunks.append(outchunk)
             nonce = sodium_increment(nonce)
 

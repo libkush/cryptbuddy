@@ -61,7 +61,7 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> Li
 
         # Generate the key from the password if not already provided
         if not key:
-            key = kdf(keysize, password.encode(),
+            key = KDF(KEYSIZE, password.encode(),
                       salt, opslimit=ops, memlimit=mem)
 
         box = secret.SecretBox(key)
@@ -69,14 +69,14 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> Li
 
         # Decrypt the file data in chunks of given size
         while 1:
-            rchunk = infile.read(chunksize + macsize)
+            rchunk = infile.read(CHUNKSIZE + MACSIZE)
             if len(rchunk) == 0:
                 break
             try:
                 dchunk = box.decrypt(rchunk, nonce)
             except Exception as e:
                 raise Exception("Error during decryption") from e
-            assert len(dchunk) == len(rchunk) - macsize
+            assert len(dchunk) == len(rchunk) - MACSIZE
             outchunks.append(dchunk)
             nonce = sodium_increment(nonce)
 

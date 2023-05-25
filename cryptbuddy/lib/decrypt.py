@@ -55,19 +55,19 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
         file_data = infile.read()
 
     # Find the index of the first delimiter
-    delimiter_index = file_data.find(delimiter)
-    while delimiter_index > 0 and file_data[delimiter_index - len(escape_sequence):delimiter_index] == escape_sequence:
+    delimiter_index = file_data.find(DELIMITER)
+    while delimiter_index > 0 and file_data[delimiter_index - len(ESCAPE_SEQUENCE):delimiter_index] == ESCAPE_SEQUENCE:
         # The delimiter is part of the packed keys, search for the next occurrence
-        delimiter_index = file_data.find(delimiter, delimiter_index + 1)
+        delimiter_index = file_data.find(DELIMITER, delimiter_index + 1)
 
     if delimiter_index == -1:
         raise ValueError("Delimiter not found or preceded by escape sequence")
 
     packed_keys = file_data[:delimiter_index]
-    encrypted_chunks = file_data[delimiter_index + len(delimiter):]
+    encrypted_chunks = file_data[delimiter_index + len(DELIMITER):]
 
     # Process the escape sequences within the packed keys
-    packed_keys = packed_keys.replace(escape_sequence + delimiter, delimiter)
+    packed_keys = packed_keys.replace(ESCAPE_SEQUENCE + DELIMITER, DELIMITER)
 
     keys = loads(packed_keys)
     my_key = keys[name]
