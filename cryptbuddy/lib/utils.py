@@ -1,7 +1,9 @@
 import typer
 from rich.table import Table
 from rich.console import Console
-from typing import Iterable, List, Tuple
+from typing import List, Tuple
+
+console = Console()
 
 
 def success(*args: object):
@@ -18,10 +20,7 @@ def success(*args: object):
     `None`
 
     """
-    # Convert arguments to a space-separated string
-    msg = " ".join(str(arg) for arg in args)
-    success = typer.style(f"SUCCESS: {msg}", fg=typer.colors.GREEN, bold=True)
-    typer.echo(success)
+    console.print(f"[bold green]SUCCESS: [/bold green]", args)
 
 
 def warning(*args: object):
@@ -38,10 +37,7 @@ def warning(*args: object):
     `None`
 
     """
-    # Convert arguments to a space-separated string
-    msg = " ".join(str(arg) for arg in args)
-    warning = typer.style(f"WARNING: {msg}", fg=typer.colors.YELLOW, bold=True)
-    typer.echo(warning)
+    console.print(f"[bold yellow]WARNING: [/bold yellow]", args)
 
 
 def error(*args: object):
@@ -63,10 +59,7 @@ def error(*args: object):
         Always raises a `typer.Exit` exception with exit code 1.
 
     """
-    # Convert arguments to a space-separated string
-    msg = " ".join(str(arg) for arg in args)
-    error = typer.style(f"ERROR: {msg}", fg=typer.colors.RED, bold=True)
-    typer.echo(error)
+    console.print(f"[bold red]ERROR: [/bold red]", args)
     raise typer.Exit(1)
 
 
@@ -85,9 +78,7 @@ def info(*args):
 
     """
     # Convert arguments to a space-separated string
-    msg = " ".join(str(arg) for arg in args)
-    info = typer.style(f"INFO: {msg}", fg=typer.colors.BLUE)
-    typer.echo(info)
+    console.print(f"[bold blue]INFO: [/bold blue]", args)
 
 
 def print_keys(records: List[Tuple[int, str]]):
@@ -104,7 +95,6 @@ def print_keys(records: List[Tuple[int, str]]):
     `None`
 
     """
-    console = Console()
     table = Table(show_header=True, header_style="bold magenta")
 
     table.add_column("ID")
