@@ -20,7 +20,7 @@ def success(*args: object):
     `None`
 
     """
-    console.print(f"[bold green]SUCCESS: [/bold green]", args)
+    console.print("[bold green]SUCCESS: [/bold green]", *args)
 
 
 def warning(*args: object):
@@ -37,7 +37,7 @@ def warning(*args: object):
     `None`
 
     """
-    console.print(f"[bold yellow]WARNING: [/bold yellow]", args)
+    console.print("[bold yellow]WARNING: [/bold yellow]", *args)
 
 
 def error(*args: object):
@@ -59,7 +59,7 @@ def error(*args: object):
         Always raises a `typer.Exit` exception with exit code 1.
 
     """
-    console.print(f"[bold red]ERROR: [/bold red]", args)
+    console.print("[bold red]ERROR: [/bold red]", *args)
     raise typer.Exit(1)
 
 
@@ -78,7 +78,7 @@ def info(*args):
 
     """
     # Convert arguments to a space-separated string
-    console.print(f"[bold blue]INFO: [/bold blue]", args)
+    console.print("[bold blue]INFO: [/bold blue]", *args)
 
 
 def print_keys(records: List[Tuple[int, str]]):
