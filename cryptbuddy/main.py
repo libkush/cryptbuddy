@@ -100,7 +100,9 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
     writable=True,
     resolve_path=True
 )],
-        user: Annotated[Optional[List[str]], typer.Option("--user", "-u")] = None,):
+        user: Annotated[Optional[List[str]],
+                        typer.Option("--user", "-u")] = None,
+        shred: Annotated[bool, typer.Option("--shred", "-s", help="Shred the original file after encryption")] = True):
     """
     Encrypt file(s) or folder(s) for one or more users from your keychain
     """
@@ -117,7 +119,9 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                     except Exception as e:
                         error(e)
                     write_chunks(chunks, file.with_suffix(suffix+".crypt"))
-                    shred_file(file)
+                    if shred:
+                        shred_file(file)
+                        info(f"{file} shredded")
                     success(f"{file} encrypted")
             success(f"All files in the {path} encrypted")
         else:
@@ -127,6 +131,9 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                 error(e)
             suffix = path.suffix
             write_chunks(chunks, path.with_suffix(suffix+".crypt"))
+            if shred:
+                shred_file(path)
+                info(f"{path} shredded")
             success(f"{path} encrypted")
 
 
@@ -140,9 +147,9 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
 
     password: Annotated[
         str, typer.Option("--password", "-p",
-                          prompt=True, hide_input=True, help="Password to decrypt your private key")]
-
-
+                          prompt=True, hide_input=True, help="Password to decrypt your private key")],
+    shred: Annotated[bool, typer.Option(
+        "--shred", "-s", help="Shred the original file after decryption")] = True
 ):
     """
     Decrypt file(s) or folder(s) encrypted with your public key
@@ -169,7 +176,9 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
                         write_chunks(chunks, file.with_suffix(""))
                     else:
                         write_chunks(chunks, file.with_suffix(".dec"))
-                    shred_file(file)
+                    if shred:
+                        shred_file(file)
+                        info(f"{file} shredded")
                     success(f"{file} decrypted")
             success(f"All files in the {path} decrypted")
             return
@@ -182,6 +191,9 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
                 write_chunks(chunks, path.stem)
             else:
                 write_chunks(chunks, path.with_suffix(".dec"))
+            if shred:
+                shred_file(path)
+                info(f"{path} shredded")
             success(f"{path} decrypted")
 
 # TODO: Add a command to edit details of the user
