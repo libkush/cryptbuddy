@@ -25,7 +25,6 @@ def shred_file(path: Path) -> None:
         If the file does not exist.
 
     """
-
     # Check if the file exists
     if not (path.exists() or path.is_file()):
         raise FileNotFoundError("File does not exist")
@@ -58,7 +57,6 @@ def write_chunks(chunks: List[bytes], path: Path) -> None:
     `None`
 
     """
-
     with open(path, "wb") as outfile:
         for chunk in chunks:
             outfile.write(chunk)
@@ -80,7 +78,6 @@ def write_bytes(data: bytes, path: Path) -> None:
     `None`
 
     """
-
     with open(path, "wb") as file:
         file.write(data)
 
@@ -110,7 +107,6 @@ def create_directories() -> None:
     The directories are created with the necessary parent directories if they do not exist.
 
     """
-
     cache_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
     config_dir.mkdir(parents=True, exist_ok=True)

@@ -30,7 +30,6 @@ def init(name: Annotated[str, typer.Option("--name", "-u", help="Username")],
          email: Annotated[str, typer.Option("--email", "-e", prompt=True, confirmation_prompt=True)],
          password: Annotated[str, typer.Option("--password", "-p", prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt your private key")]):
     """Initialize cryptbuddy by generating a key-pair and creating the keychain database"""
-
     stats = PasswordStats(password).strength()
     if stats < 0.3:
         error("Password is too weak!")
@@ -73,7 +72,6 @@ def export(dir: Annotated[Path, typer.Argument(
     file_okay=False
 )]):
     """Export your public key file to specified directory to share with others"""
-
     public_key_path = Path(f"{config_dir}/public.key")
     if not public_key_path.exists():
         error("Public key not found")
@@ -144,7 +142,6 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
         "--shred", "-s", help="Shred the original file after decryption")] = True
 ):
     """Decrypt file(s) or folder(s) encrypted with your public key"""
-
     private_key_path = Path(f"{config_dir}/private.key")
     if not private_key_path.exists():
         error("Private key not found. Please initialize CryptBuddy")

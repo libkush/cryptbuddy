@@ -14,7 +14,6 @@ chain = Keychain()
 @app.command()
 def add(key: Annotated[Path, typer.Argument(help="Path to the public key", exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True)]):
     """Add a key to your keychain"""
-
     public_key = AppPublicKey.from_file(key)
 
     chain.add_key(public_key)

@@ -40,7 +40,6 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> Li
     using the `symmetric_encrypt` function.
 
     """
-
     info(f"Decrypting {file} symmetrically")
 
     if not file.exists():

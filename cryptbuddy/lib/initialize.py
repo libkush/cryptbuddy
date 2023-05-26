@@ -37,7 +37,6 @@ def initialize_cryptbuddy(name: str, email: str, password: str) -> None:
     - The public key is added to the keychain for future use.
 
     """
-
     create_directories()
 
     info("Keys will be stored at: ", config_dir)

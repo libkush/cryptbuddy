@@ -41,7 +41,6 @@ def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> Li
     The file must be decrypted using the corresponding `symmetric_decrypt` function.
 
     """
-
     info(f"Encrypting {file} symmetrically")
 
     if not file.exists():
