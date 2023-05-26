@@ -83,7 +83,7 @@ def shred_cmd(
 # TODO: Export complete data with the key chain
 @app.command()
 def export(
-    dir: Annotated[
+    directory: Annotated[
         Path,
         typer.Argument(
             help="Directory to export the public key to",
@@ -101,7 +101,7 @@ def export(
         error("Public key not found")
 
     try:
-        copyfile(public_key_path, Path(f"{dir}/public.key"))
+        copyfile(public_key_path, Path(f"{directory}/public.key"))
     except Exception as e:
         error(e)
 

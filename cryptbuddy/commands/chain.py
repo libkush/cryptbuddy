@@ -56,8 +56,8 @@ def delete(
     success(f"{name}'s public key deleted from the keychain")
 
 
-@app.command()
-def list():
+@app.command("list")
+def list_cmd():
     """List all the keys in your keychain"""
     keys = chain.get_names()
     print_keys(keys)
