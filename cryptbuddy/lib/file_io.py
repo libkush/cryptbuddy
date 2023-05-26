@@ -83,7 +83,7 @@ def write_bytes(data: bytes, path: Path) -> None:
         file.write(data)
 
 
-### The cache, data and config directories used by cryptbuddy
+# The cache, data and config directories used by cryptbuddy
 
 cache_dir = Path(user_cache_dir("cryptbuddy"))
 data_dir = Path(user_data_dir("cryptbuddy"))
