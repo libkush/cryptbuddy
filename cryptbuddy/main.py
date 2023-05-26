@@ -44,7 +44,6 @@ def init(
     ],
 ):
     """Initialize cryptbuddy by generating a key-pair and creating the keychain database"""
-
     stats = PasswordStats(password).strength()
     if stats < 0.3:
         error("Password is too weak!")
@@ -97,7 +96,6 @@ def export(
     ]
 ):
     """Export your public key file to specified directory to share with others"""
-
     public_key_path = Path(f"{config_dir}/public.key")
     if not public_key_path.exists():
         error("Public key not found")
@@ -188,7 +186,6 @@ def decrypt(
     ] = True,
 ):
     """Decrypt file(s) or folder(s) encrypted with your public key"""
-
     private_key_path = Path(f"{config_dir}/private.key")
     if not private_key_path.exists():
         error("Private key not found. Please initialize CryptBuddy")

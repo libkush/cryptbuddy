@@ -43,7 +43,6 @@ def symmetric_decrypt(
     using the `symmetric_encrypt` function.
 
     """
-
     info(f"Decrypting {file} symmetrically")
 
     if not file.exists():

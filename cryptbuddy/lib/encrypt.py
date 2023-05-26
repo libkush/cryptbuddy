@@ -42,7 +42,6 @@ def asymmetric_encrypt(users: List[str], file: Path) -> List[bytes]:
     The file must be decrypted using the corresponding `asymmetric_decrypt` function.
 
     """
-
     info(f"Encrypting {file} for {users}")
 
     db = Keychain()

@@ -42,7 +42,6 @@ def encrypt(
     ] = True,
 ):
     """Encrypt file(s) or folder(s) using a password"""
-
     stats = PasswordStats(password).strength()
     if stats < 0.3:
         warning("Password is weak!")
@@ -100,7 +99,6 @@ def decrypt(
     ] = True,
 ):
     """Decrypt file(s) or folder(s) using a password"""
-
     for path in paths:
         if path.is_dir():
             for file in path.rglob("*"):

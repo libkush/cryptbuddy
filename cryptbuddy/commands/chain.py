@@ -27,7 +27,6 @@ def add(
     ]
 ):
     """Add a key to your keychain"""
-
     public_key = AppPublicKey.from_file(key)
 
     chain.add_key(public_key)
