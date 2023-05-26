@@ -44,7 +44,6 @@ def asymmetric_decrypt(
     The file must have been encrypted using the corresponding `asymmetric_encrypt` function.
 
     """
-
     info(f"Decrypting {file}")
 
     # Get the decrypted NaCl private key object
