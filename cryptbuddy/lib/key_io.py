@@ -202,8 +202,8 @@ class AppPrivateKey(BaseKey):
         """
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")
-        with open(file, "rb") as file:
-            encoded_bytes = file.read()
+        with open(file, "rb") as f:
+            encoded_bytes = f.read()
         return AppPrivateKey.from_packed(encoded_bytes)
 
     def decrypted_key_chunks(self, password: str) -> List[bytes]:
@@ -315,8 +315,8 @@ class AppPublicKey(BaseKey):
         """
         if file.exists():
             raise FileExistsError("File already exists")
-        with open(file, "wb") as file:
-            file.write(self.packed)
+        with open(file, "wb") as f:
+            f.write(self.packed)
 
     @classmethod
     def from_packed(cls, packed: bytes) -> "AppPublicKey":
@@ -361,6 +361,6 @@ class AppPublicKey(BaseKey):
         """
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")
-        with open(file, "rb") as file:
-            encoded_bytes = file.read()
+        with open(file, "rb") as f:
+            encoded_bytes = f.read()
         return AppPublicKey.from_packed(encoded_bytes)
