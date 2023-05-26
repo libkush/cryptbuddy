@@ -145,8 +145,5 @@ class Keychain:
         self.conn.commit()
 
     def close(self) -> None:
-        """
-        Close the keychain connection.
-
-        """
+        """Close the keychain connection."""
         self.conn.close()
