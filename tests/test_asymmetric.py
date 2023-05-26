@@ -115,7 +115,7 @@ def test_asymmetric_directory(password, user):
 def test_asymmetric_multipath(message, password, user):
     dir1, file1, file2 = make_test_dir(test_dir, "test_file1.txt", "test_file2.txt")
 
-    file, fname = make_singlefile(message, test_dir, "test_file.txt")
+    file, _fname = make_singlefile(message, test_dir, "test_file.txt")
 
     try:
         # Encryption

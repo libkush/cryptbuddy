@@ -143,7 +143,7 @@ def test_symmetric_directory(password):
 def test_symmetric_multipath(message, password):
     dir1, file1, file2 = make_test_dir(test_dir, "test_file1.txt", "test_file2.txt")
 
-    file, fname = make_singlefile(message, test_dir, "test_file.txt")
+    file, _fname = make_singlefile(message, test_dir, "test_file.txt")
 
     try:
         # Encryption
