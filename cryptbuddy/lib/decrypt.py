@@ -15,8 +15,8 @@ def asymmetric_decrypt(
     file: Path, password: str, private_key_object: AppPrivateKey
 ) -> List[bytes]:
     """
-    Decrypts a file asymmetrically a private key. The file must have been encrypted using the corresponding
-    `asymmetric_encrypt` function.
+    Decrypts a file asymmetrically a private key. The file must have been
+    encrypted using the corresponding `asymmetric_encrypt` function.
 
     Parameters
     ----------
@@ -41,7 +41,8 @@ def asymmetric_decrypt(
 
     Notes
     -----
-    The file must have been encrypted using the corresponding `asymmetric_encrypt` function.
+    The file must have been encrypted using the corresponding
+    `asymmetric_encrypt` function.
 
     """
     info(f"Decrypting {file}")

@@ -87,7 +87,8 @@ class AppPrivateKey(BaseKey):
 
     Class Methods
     -------------
-    from_original_key(meta: `KeyMeta`, key: `PrivateKey`, password: `str`) -> `AppPrivateKey`:
+    from_original_key(meta: `KeyMeta`, key: `PrivateKey`, password: `str`)
+    -> `AppPrivateKey`:
         Create an AppPrivateKey instance from an original PrivateKey.
     from_packed(packed: `bytes`) -> `AppPrivateKey`:
         Create an AppPrivateKey instance from a packed representation.

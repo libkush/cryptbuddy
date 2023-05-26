@@ -10,7 +10,8 @@ from cryptbuddy.lib.utils import info, success
 
 def initialize_cryptbuddy(name: str, email: str, password: str) -> None:
     """
-    Initializes CryptBuddy by generating a keypair and saving the keys.
+    Initializes CryptBuddy by generating a keypair and saving
+    the keys.
 
     Parameters
     ----------

@@ -43,7 +43,8 @@ def warning(*args: object):
 
 def error(*args: object):
     """
-    Prints an error message with red color and bold formatting, and raises a `typer.Exit` exception.
+    Prints an error message with red color and bold formatting,
+    and raises a `typer.Exit` exception.
 
     Parameters
     ----------

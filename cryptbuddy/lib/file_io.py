@@ -96,8 +96,8 @@ def create_directories() -> None:
     Creates the necessary directories for caching, data, and configuration.
 
     This function creates the cache directory, data directory, and config directory
-    required for the operation of the CryptBuddy application. The directories are created
-    using the appropriate paths returned by the appdirs module.
+    required for the operation of the CryptBuddy application. The directories
+    are created using the appropriate paths returned by the appdirs module.
 
     Returns
     -------
@@ -105,7 +105,8 @@ def create_directories() -> None:
 
     Note
     ----
-    The directories are created with the necessary parent directories if they do not exist.
+    The directories are created with the necessary parent directories
+    if they do not exist.
 
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
