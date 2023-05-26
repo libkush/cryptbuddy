@@ -33,13 +33,13 @@ class Keychain:
         c = conn.cursor()
 
         # Create the keys table if it doesn't exist
-        create_query = '''
+        create_query = """
             CREATE TABLE IF NOT EXISTS keys (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 key BLOB NOT NULL
             )
-        '''
+        """
         c.execute(create_query)
         conn.commit()
 
@@ -59,7 +59,8 @@ class Keychain:
         """
         info(f"Adding key {key.meta.name} to keychain")
         self.c.execute(
-            "INSERT INTO keys (name, key) VALUES (?, ?)", (key.meta.name, key.packed))
+            "INSERT INTO keys (name, key) VALUES (?, ?)", (key.meta.name, key.packed)
+        )
         self.conn.commit()
 
     def get_key(self, name: str = None, id: int = None) -> AppPublicKey:

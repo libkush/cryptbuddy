@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 
 from appdirs import user_cache_dir, user_config_dir, user_data_dir
+
 from cryptbuddy.lib.utils import info
 
 

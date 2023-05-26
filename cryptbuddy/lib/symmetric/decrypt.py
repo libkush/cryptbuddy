@@ -1,13 +1,16 @@
 from pathlib import Path
 from typing import List
 
-from cryptbuddy.lib.constants import *
-from cryptbuddy.lib.utils import info
 from nacl import pwhash, secret
 from nacl.bindings import sodium_increment
 
+from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.utils import info
 
-def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> List[bytes]:
+
+def symmetric_decrypt(
+    file: Path, password: str = None, key: bytes = None
+) -> List[bytes]:
     """
     Decrypts a file symmetrically using a password or key.
 
@@ -56,13 +59,12 @@ def symmetric_decrypt(file: Path, password: str = None, key: bytes = None) -> Li
         encodedOps = infile.readline()
         encodedMem = infile.readline()
         nonce = infile.read(secret.SecretBox.NONCE_SIZE)
-        ops = int(encodedOps.decode(encoding='UTF-8'))
-        mem = int(encodedMem.decode(encoding='UTF-8'))
+        ops = int(encodedOps.decode(encoding="UTF-8"))
+        mem = int(encodedMem.decode(encoding="UTF-8"))
 
         # Generate the key from the password if not already provided
         if not key:
-            key = KDF(KEYSIZE, password.encode(),
-                      salt, opslimit=ops, memlimit=mem)
+            key = KDF(KEYSIZE, password.encode(), salt, opslimit=ops, memlimit=mem)
 
         box = secret.SecretBox(key)
         _newline = infile.read(1)

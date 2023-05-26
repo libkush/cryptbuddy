@@ -1,10 +1,11 @@
 from pathlib import Path
 
+from nacl.public import PrivateKey
+
 from cryptbuddy.lib.file_io import *
 from cryptbuddy.lib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
 from cryptbuddy.lib.keychain import Keychain
 from cryptbuddy.lib.utils import *
-from nacl.public import PrivateKey
 
 
 def initialize_cryptbuddy(name: str, email: str, password: str) -> None:
@@ -44,15 +45,19 @@ def initialize_cryptbuddy(name: str, email: str, password: str) -> None:
     info("Keychain is at: ", data_dir)
     info("Cache is at: ", cache_dir)
 
-    if not (isinstance(name, str) or isinstance(email, str) or isinstance(password, str)):
+    if not (
+        isinstance(name, str) or isinstance(email, str) or isinstance(password, str)
+    ):
         raise TypeError("Invalid argument types")
 
     if Path(f"{config_dir}/private.key").exists():
         raise FileExistsError(
-            "Private key already exists. You might have already initialized CryptBuddy.")
+            "Private key already exists. You might have already initialized CryptBuddy."
+        )
     if Path(f"{config_dir}/public.key").exists():
         raise FileExistsError(
-            "Public key already exists. You might have already initialized CryptBuddy.")
+            "Public key already exists. You might have already initialized CryptBuddy."
+        )
 
     # Generate keypair using NaCl
     info("Generating keypair...")
@@ -61,8 +66,7 @@ def initialize_cryptbuddy(name: str, email: str, password: str) -> None:
 
     # Create keypair objects
     meta = KeyMeta(name, email)
-    private_key = AppPrivateKey.from_original_key(
-        meta, private_key_generated, password)
+    private_key = AppPrivateKey.from_original_key(meta, private_key_generated, password)
     public_key = AppPublicKey(meta, public_key_generated.encode())
 
     # Save keys to files
