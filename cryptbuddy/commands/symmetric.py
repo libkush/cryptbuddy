@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 from cryptbuddy.lib.file_io import shred_file, write_chunks
 from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
 from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
-from cryptbuddy.lib.utils import *
+from cryptbuddy.lib.utils import error, info, success, warning
 
 app = typer.Typer()
 

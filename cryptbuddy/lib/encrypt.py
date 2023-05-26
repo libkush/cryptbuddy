@@ -5,11 +5,11 @@ from msgpack import dumps
 from nacl import utils
 from nacl.public import PublicKey, SealedBox
 
-from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.constants import DELIMITER, ESCAPE_SEQUENCE, KEYSIZE
 from cryptbuddy.lib.key_io import AppPublicKey
 from cryptbuddy.lib.keychain import Keychain
 from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
-from cryptbuddy.lib.utils import *
+from cryptbuddy.lib.utils import info
 
 
 def asymmetric_encrypt(users: List[str], file: Path) -> List[bytes]:

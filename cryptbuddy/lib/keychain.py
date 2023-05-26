@@ -1,8 +1,9 @@
 import sqlite3
-from typing import Tuple
+from typing import List, Tuple
 
-from cryptbuddy.lib.file_io import *
+from cryptbuddy.lib.file_io import create_directories, data_dir
 from cryptbuddy.lib.key_io import AppPublicKey
+from cryptbuddy.lib.utils import info
 
 create_directories()
 

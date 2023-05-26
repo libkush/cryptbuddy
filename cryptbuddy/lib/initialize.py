@@ -2,10 +2,10 @@ from pathlib import Path
 
 from nacl.public import PrivateKey
 
-from cryptbuddy.lib.file_io import *
+from cryptbuddy.lib.file_io import cache_dir, config_dir, create_directories, data_dir
 from cryptbuddy.lib.key_io import AppPrivateKey, AppPublicKey, KeyMeta
 from cryptbuddy.lib.keychain import Keychain
-from cryptbuddy.lib.utils import *
+from cryptbuddy.lib.utils import info, success
 
 
 def initialize_cryptbuddy(name: str, email: str, password: str) -> None:

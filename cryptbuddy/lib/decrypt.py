@@ -4,7 +4,7 @@ from typing import List
 from msgpack import loads
 from nacl.public import SealedBox
 
-from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.constants import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.lib.file_io import cache_dir, shred_file
 from cryptbuddy.lib.key_io import AppPrivateKey
 from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt

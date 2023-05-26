@@ -1,9 +1,10 @@
 from pathlib import Path
+from typing import List
 
 from msgpack import dumps, loads
 from nacl.public import PrivateKey
 
-from cryptbuddy.lib.file_io import *
+from cryptbuddy.lib.file_io import cache_dir, shred_file, write_bytes, write_chunks
 from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
 from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
 

@@ -6,7 +6,7 @@ from typing_extensions import Annotated
 
 from cryptbuddy.lib.key_io import AppPublicKey
 from cryptbuddy.lib.keychain import Keychain
-from cryptbuddy.lib.utils import *
+from cryptbuddy.lib.utils import error, print_keys, success
 
 app = typer.Typer()
 chain = Keychain()

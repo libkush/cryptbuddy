@@ -4,7 +4,7 @@ from typing import List
 from nacl import pwhash, secret
 from nacl.bindings import sodium_increment
 
-from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.constants import CHUNKSIZE, KDF, KEYSIZE, MACSIZE
 from cryptbuddy.lib.utils import info
 
 
