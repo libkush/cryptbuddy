@@ -42,7 +42,10 @@ def init(
         ),
     ],
 ):
-    """Initialize cryptbuddy by generating a key-pair and creating the keychain database"""
+    """
+    Initialize cryptbuddy by generating a key-pair and creating the
+    keychain database
+    """
     stats = PasswordStats(password).strength()
     if stats < 0.3:
         error("Password is too weak!")
