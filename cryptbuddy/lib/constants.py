@@ -1,8 +1,6 @@
 from nacl import pwhash, secret
 
-"""
-Cryptographic constants required by cryptbuddy
-"""
+### Cryptographic constants required by cryptbuddy
 KDF = pwhash.argon2i.kdf
 
 CHUNKSIZE = 64 * 1024
