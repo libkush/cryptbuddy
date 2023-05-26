@@ -61,7 +61,3 @@ def list_cmd():
     """List all the keys in your keychain"""
     keys = chain.get_names()
     print_keys(keys)
-
-
-if __name__ == "__main__":
-    app()

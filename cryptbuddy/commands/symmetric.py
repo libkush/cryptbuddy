@@ -132,7 +132,3 @@ def decrypt(
             if shred:
                 shred_file(path)
                 info(f"{path} shredded")
-
-
-if __name__ == "__main__":
-    app()
