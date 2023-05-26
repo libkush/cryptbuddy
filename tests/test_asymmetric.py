@@ -1,6 +1,8 @@
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 import pytest
+
 from tests.utils import *
 
 subprocess.run(["poetry", "install"], cwd=test_dir.parent)
@@ -10,13 +12,13 @@ subprocess.run(["poetry", "install"], cwd=test_dir.parent)
 @pytest.mark.parametrize("user", ["Kush Patel"])
 @pytest.mark.parametrize("message", ["All sloths are slow"])
 def test_asymmetric_singlefile(password, user, message):
-
-    file, fname = make_singlefile(message, test_dir, 'test_file.txt')
+    file, fname = make_singlefile(message, test_dir, "test_file.txt")
     try:
         # Encryption
         encrypt_command = ["cb", "encrypt", str(file), "--user", f"{user}"]
         encrypt_result = subprocess.run(
-            encrypt_command, capture_output=True, text=True, cwd=test_dir)
+            encrypt_command, capture_output=True, text=True, cwd=test_dir
+        )
 
         # Print the encryption stdout and stderr
         print_result(encrypt_result)
@@ -29,11 +31,11 @@ def test_asymmetric_singlefile(password, user, message):
         file.unlink()
 
         # Decryption
-        encrypted_file = file.with_suffix(file.suffix+'.crypt')
-        decrypt_command = ["cb", "decrypt", str(
-            encrypted_file), "--password", password]
+        encrypted_file = file.with_suffix(file.suffix + ".crypt")
+        decrypt_command = ["cb", "decrypt", str(encrypted_file), "--password", password]
         decrypt_result = subprocess.run(
-            decrypt_command, capture_output=True, text=True, cwd=test_dir)
+            decrypt_command, capture_output=True, text=True, cwd=test_dir
+        )
 
         # Print the decryption stdout and stderr
         print_result(decrypt_result)
@@ -57,16 +59,14 @@ def test_asymmetric_singlefile(password, user, message):
 @pytest.mark.parametrize("password", ["R@nd0m5h1t"])
 @pytest.mark.parametrize("user", ["Kush Patel"])
 def test_asymmetric_directory(password, user):
-
-    dir1, file1, file2 = make_test_dir(
-        test_dir, 'test_file1.txt', 'test_file2.txt')
+    dir1, file1, file2 = make_test_dir(test_dir, "test_file1.txt", "test_file2.txt")
 
     try:
         # Encryption
-        encrypt_command = ["cb", "encrypt",
-                           str(dir1), "--user", f"{user}"]
+        encrypt_command = ["cb", "encrypt", str(dir1), "--user", f"{user}"]
         encrypt_result = subprocess.run(
-            encrypt_command, capture_output=True, text=True, cwd=test_dir)
+            encrypt_command, capture_output=True, text=True, cwd=test_dir
+        )
 
         # Print the encryption stdout and stderr
         print_result(encrypt_result)
@@ -78,14 +78,14 @@ def test_asymmetric_directory(password, user):
 
         # Delete the original files after encryption
         for f in dir1.iterdir():
-            if not f.suffix == '.crypt':
+            if not f.suffix == ".crypt":
                 f.unlink()
 
         # Decryption
-        decrypt_command = ["cb", "decrypt",
-                           str(dir1), "--password", password]
+        decrypt_command = ["cb", "decrypt", str(dir1), "--password", password]
         decrypt_result = subprocess.run(
-            decrypt_command, capture_output=True, text=True, cwd=test_dir)
+            decrypt_command, capture_output=True, text=True, cwd=test_dir
+        )
 
         # Print the decryption stdout and stderr
         print_result(decrypt_result)
@@ -98,8 +98,8 @@ def test_asymmetric_directory(password, user):
         # Verify the decrypted file contents
         decrypted_contents1 = file1.read_text()
         decrypted_contents2 = file2.read_text()
-        expected_contents1 = 'cats and dogs'
-        expected_contents2 = 'dogs and cats'
+        expected_contents1 = "cats and dogs"
+        expected_contents2 = "dogs and cats"
         assert decrypted_contents1 == expected_contents1
         assert decrypted_contents2 == expected_contents2
 
@@ -113,19 +113,17 @@ def test_asymmetric_directory(password, user):
 @pytest.mark.parametrize("message", ["All sloths are slow"])
 @pytest.mark.parametrize("user", ["Kush Patel"])
 def test_asymmetric_multipath(message, password, user):
+    dir1, file1, file2 = make_test_dir(test_dir, "test_file1.txt", "test_file2.txt")
 
-    dir1, file1, file2 = make_test_dir(
-        test_dir, 'test_file1.txt', 'test_file2.txt')
-
-    file, fname = make_singlefile(message, test_dir, 'test_file.txt')
+    file, fname = make_singlefile(message, test_dir, "test_file.txt")
 
     try:
         # Encryption
-        encrypt_command = ["cb", "encrypt",
-                           str(dir1), str(file), "--user", user]
+        encrypt_command = ["cb", "encrypt", str(dir1), str(file), "--user", user]
 
         encrypt_result = subprocess.run(
-            encrypt_command, capture_output=True, text=True, cwd=test_dir)
+            encrypt_command, capture_output=True, text=True, cwd=test_dir
+        )
 
         # Print the encryption stdout and stderr
         print_result(encrypt_result)
@@ -137,15 +135,22 @@ def test_asymmetric_multipath(message, password, user):
 
         # Delete the original files after encryption
         for f in dir1.iterdir():
-            if not f.suffix == '.crypt':
+            if not f.suffix == ".crypt":
                 f.unlink()
         file.unlink()
 
-        encrypted_file = file.with_suffix(file.suffix+'.crypt')
-        decrypt_command = ["cb", "decrypt",
-                           str(encrypted_file), str(dir1), "--password", password]
+        encrypted_file = file.with_suffix(file.suffix + ".crypt")
+        decrypt_command = [
+            "cb",
+            "decrypt",
+            str(encrypted_file),
+            str(dir1),
+            "--password",
+            password,
+        ]
         decrypt_result = subprocess.run(
-            decrypt_command, capture_output=True, text=True, cwd=test_dir)
+            decrypt_command, capture_output=True, text=True, cwd=test_dir
+        )
 
         # Print the decryption stdout and stderr
         print_result(decrypt_result)
@@ -159,8 +164,8 @@ def test_asymmetric_multipath(message, password, user):
         decrypted_contents1 = file1.read_text()
         decrypted_contents2 = file2.read_text()
         decrypted_contents3 = file.read_text()
-        expected_contents1 = 'cats and dogs'
-        expected_contents2 = 'dogs and cats'
+        expected_contents1 = "cats and dogs"
+        expected_contents2 = "dogs and cats"
         expected_contents3 = message
         assert decrypted_contents1 == expected_contents1
         assert decrypted_contents2 == expected_contents2
@@ -175,5 +180,5 @@ def test_asymmetric_multipath(message, password, user):
 
 
 # Run the test
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__])

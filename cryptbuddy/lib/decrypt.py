@@ -1,16 +1,19 @@
 from pathlib import Path
 from typing import List
 
+from msgpack import loads
+from nacl.public import SealedBox
+
 from cryptbuddy.lib.constants import *
 from cryptbuddy.lib.file_io import cache_dir, shred_file
 from cryptbuddy.lib.key_io import AppPrivateKey
 from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
 from cryptbuddy.lib.utils import info
-from msgpack import loads
-from nacl.public import SealedBox
 
 
-def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivateKey) -> List[bytes]:
+def asymmetric_decrypt(
+    file: Path, password: str, private_key_object: AppPrivateKey
+) -> List[bytes]:
     """
     Decrypts a file asymmetrically a private key. The file must have been encrypted using the corresponding
     `asymmetric_encrypt` function.
@@ -56,7 +59,11 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
 
     # Find the index of the first delimiter
     delimiter_index = file_data.find(DELIMITER)
-    while delimiter_index > 0 and file_data[delimiter_index - len(ESCAPE_SEQUENCE):delimiter_index] == ESCAPE_SEQUENCE:
+    while (
+        delimiter_index > 0
+        and file_data[delimiter_index - len(ESCAPE_SEQUENCE) : delimiter_index]
+        == ESCAPE_SEQUENCE
+    ):
         # The delimiter is part of the packed keys, search for the next occurrence
         delimiter_index = file_data.find(DELIMITER, delimiter_index + 1)
 
@@ -64,7 +71,7 @@ def asymmetric_decrypt(file: Path, password: str, private_key_object: AppPrivate
         raise ValueError("Delimiter not found or preceded by escape sequence")
 
     packed_keys = file_data[:delimiter_index]
-    encrypted_chunks = file_data[delimiter_index + len(DELIMITER):]
+    encrypted_chunks = file_data[delimiter_index + len(DELIMITER) :]
 
     # Process the escape sequences within the packed keys
     packed_keys = packed_keys.replace(ESCAPE_SEQUENCE + DELIMITER, DELIMITER)

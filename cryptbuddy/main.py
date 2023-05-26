@@ -18,17 +18,31 @@ from cryptbuddy.lib.keychain import Keychain
 from cryptbuddy.lib.utils import *
 
 db = Keychain()
-app = typer.Typer(name="cryptbuddy",
-                  help="A CLI tool for encryption and decryption")
+app = typer.Typer(name="cryptbuddy", help="A CLI tool for encryption and decryption")
 app.add_typer(chain.app, name="keychain", help="Manage your keychain")
-app.add_typer(symmetric.app, name="symmetric",
-              help="Encrypt and decrypt files symmetrically")
+app.add_typer(
+    symmetric.app, name="symmetric", help="Encrypt and decrypt files symmetrically"
+)
 
 
 @app.command()
-def init(name: Annotated[str, typer.Option("--name", "-u", help="Username")],
-         email: Annotated[str, typer.Option("--email", "-e", prompt=True, confirmation_prompt=True)],
-         password: Annotated[str, typer.Option("--password", "-p", prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt your private key")]):
+def init(
+    name: Annotated[str, typer.Option("--name", "-u", help="Username")],
+    email: Annotated[
+        str, typer.Option("--email", "-e", prompt=True, confirmation_prompt=True)
+    ],
+    password: Annotated[
+        str,
+        typer.Option(
+            "--password",
+            "-p",
+            prompt=True,
+            confirmation_prompt=True,
+            hide_input=True,
+            help="Password to encrypt your private key",
+        ),
+    ],
+):
     """Initialize cryptbuddy by generating a key-pair and creating the keychain database"""
 
     stats = PasswordStats(password).strength()
@@ -43,12 +57,17 @@ def init(name: Annotated[str, typer.Option("--name", "-u", help="Username")],
 
 
 @app.command()
-def shred(paths: Annotated[List[Path], typer.Argument(
-    help="Paths of the file(s) or folder(s) to be shredded",
-    exists=True,
-    readable=True,
-    resolve_path=True
-)],):
+def shred(
+    paths: Annotated[
+        List[Path],
+        typer.Argument(
+            help="Paths of the file(s) or folder(s) to be shredded",
+            exists=True,
+            readable=True,
+            resolve_path=True,
+        ),
+    ],
+):
     """Shreds files/folders such that they cannot be later recovered"""
     for path in paths:
         if path.is_dir():
@@ -63,15 +82,20 @@ def shred(paths: Annotated[List[Path], typer.Argument(
 
 
 # TODO: Export complete data with the key chain
-@ app.command()
-def export(dir: Annotated[Path, typer.Argument(
-    help="Directory to export the public key to",
-    exists=True,
-    writable=True,
-    resolve_path=True,
-    dir_okay=True,
-    file_okay=False
-)]):
+@app.command()
+def export(
+    dir: Annotated[
+        Path,
+        typer.Argument(
+            help="Directory to export the public key to",
+            exists=True,
+            writable=True,
+            resolve_path=True,
+            dir_okay=True,
+            file_okay=False,
+        ),
+    ]
+):
     """Export your public key file to specified directory to share with others"""
 
     public_key_path = Path(f"{config_dir}/public.key")
@@ -86,17 +110,24 @@ def export(dir: Annotated[Path, typer.Argument(
     success("File exported successfully")
 
 
-@ app.command()
-def encrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Paths of the file(s) and folder(s) to encrypt",
-    exists=True,
-    readable=True,
-    writable=True,
-    resolve_path=True
-)],
-        user: Annotated[Optional[List[str]],
-                        typer.Option("--user", "-u")] = None,
-        shred: Annotated[bool, typer.Option("--shred", "-s", help="Shred the original file after encryption")] = True):
+@app.command()
+def encrypt(
+    paths: Annotated[
+        List[Path],
+        typer.Argument(
+            help="Paths of the file(s) and folder(s) to encrypt",
+            exists=True,
+            readable=True,
+            writable=True,
+            resolve_path=True,
+        ),
+    ],
+    user: Annotated[Optional[List[str]], typer.Option("--user", "-u")] = None,
+    shred: Annotated[
+        bool,
+        typer.Option("--shred", "-s", help="Shred the original file after encryption"),
+    ] = True,
+):
     """Encrypt file(s) or folder(s) for one or more users from your keychain"""
     if len(user) == 0:
         error("No users specified")
@@ -110,7 +141,7 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
                         chunks = asymmetric_encrypt(user, file)
                     except Exception as e:
                         error(e)
-                    write_chunks(chunks, file.with_suffix(suffix+".crypt"))
+                    write_chunks(chunks, file.with_suffix(suffix + ".crypt"))
                     if shred:
                         shred_file(file)
                         info(f"{file} shredded")
@@ -122,26 +153,39 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
             except Exception as e:
                 error(e)
             suffix = path.suffix
-            write_chunks(chunks, path.with_suffix(suffix+".crypt"))
+            write_chunks(chunks, path.with_suffix(suffix + ".crypt"))
             if shred:
                 shred_file(path)
                 info(f"{path} shredded")
             success(f"{path} encrypted")
 
 
-@ app.command(rich_help_panel=True)
-def decrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Path to the file to decrypt",
-    exists=True,
-    readable=True,
-    writable=True,
-    resolve_path=True)],
-
+@app.command(rich_help_panel=True)
+def decrypt(
+    paths: Annotated[
+        List[Path],
+        typer.Argument(
+            help="Path to the file to decrypt",
+            exists=True,
+            readable=True,
+            writable=True,
+            resolve_path=True,
+        ),
+    ],
     password: Annotated[
-        str, typer.Option("--password", "-p",
-                          prompt=True, hide_input=True, help="Password to decrypt your private key")],
-    shred: Annotated[bool, typer.Option(
-        "--shred", "-s", help="Shred the original file after decryption")] = True
+        str,
+        typer.Option(
+            "--password",
+            "-p",
+            prompt=True,
+            hide_input=True,
+            help="Password to decrypt your private key",
+        ),
+    ],
+    shred: Annotated[
+        bool,
+        typer.Option("--shred", "-s", help="Shred the original file after decryption"),
+    ] = True,
 ):
     """Decrypt file(s) or folder(s) encrypted with your public key"""
 
@@ -149,16 +193,14 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
     if not private_key_path.exists():
         error("Private key not found. Please initialize CryptBuddy")
 
-    private_key_object = AppPrivateKey.from_file(
-        private_key_path)
+    private_key_object = AppPrivateKey.from_file(private_key_path)
 
     for path in paths:
         if path.is_dir():
             for file in path.rglob("*"):
                 if file.is_file():
                     try:
-                        chunks = asymmetric_decrypt(
-                            file, password, private_key_object)
+                        chunks = asymmetric_decrypt(file, password, private_key_object)
                     except Exception as e:
                         error(e)
 
@@ -185,6 +227,7 @@ def decrypt(paths: Annotated[List[Path], typer.Argument(
                 shred_file(path)
                 info(f"{path} shredded")
             success(f"{path} decrypted")
+
 
 # TODO: Add a command to edit details of the user
 

@@ -1,10 +1,11 @@
 from pathlib import Path
 
+from msgpack import dumps, loads
+from nacl.public import PrivateKey
+
 from cryptbuddy.lib.file_io import *
 from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
 from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
-from msgpack import dumps, loads
-from nacl.public import PrivateKey
 
 
 class KeyMeta:
@@ -101,7 +102,7 @@ class AppPrivateKey(BaseKey):
             "type": "private",
             "name": meta.name,
             "email": meta.email,
-            "chunks": chunks
+            "chunks": chunks,
         }
         self.packed: bytes = dumps(self.data)
 
@@ -131,7 +132,9 @@ class AppPrivateKey(BaseKey):
             file.write(self.packed)
 
     @classmethod
-    def from_original_key(cls, meta: KeyMeta, key: PrivateKey, password: str) -> "AppPrivateKey":
+    def from_original_key(
+        cls, meta: KeyMeta, key: PrivateKey, password: str
+    ) -> "AppPrivateKey":
         """
         Create an AppPrivateKey instance from an original NaCl PrivateKey.
 
@@ -286,7 +289,7 @@ class AppPublicKey(BaseKey):
             "type": "public",
             "name": meta.name,
             "email": meta.email,
-            "key": key
+            "key": key,
         }
         self.packed: bytes = dumps(self.data)
 

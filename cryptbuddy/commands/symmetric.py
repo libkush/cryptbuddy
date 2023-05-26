@@ -1,30 +1,46 @@
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 import typer
+from password_strength import PasswordStats
+from typing_extensions import Annotated
+
 from cryptbuddy.lib.file_io import shred_file, write_chunks
 from cryptbuddy.lib.symmetric.decrypt import symmetric_decrypt
 from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
 from cryptbuddy.lib.utils import *
-from password_strength import PasswordStats
-from typing_extensions import Annotated
 
 app = typer.Typer()
 
 
 @app.command()
-def encrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Path to the file(s) or folder(s) to encrypt",
-    exists=True,
-    readable=True,
-    writable=True,
-    resolve_path=True
-)],
+def encrypt(
+    paths: Annotated[
+        List[Path],
+        typer.Argument(
+            help="Path to the file(s) or folder(s) to encrypt",
+            exists=True,
+            readable=True,
+            writable=True,
+            resolve_path=True,
+        ),
+    ],
     password: Annotated[
-    str, typer.Option("--password", "-p",
-                      prompt=True, confirmation_prompt=True, hide_input=True, help="Password to encrypt the file")
-],
-        shred: Annotated[Optional[bool], typer.Option("--shred", "-s", help="Shred the original file after encryption")] = True):
+        str,
+        typer.Option(
+            "--password",
+            "-p",
+            prompt=True,
+            confirmation_prompt=True,
+            hide_input=True,
+            help="Password to encrypt the file",
+        ),
+    ],
+    shred: Annotated[
+        Optional[bool],
+        typer.Option("--shred", "-s", help="Shred the original file after encryption"),
+    ] = True,
+):
     """Encrypt file(s) or folder(s) using a password"""
 
     stats = PasswordStats(password).strength()
@@ -32,14 +48,13 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
         warning("Password is weak!")
 
     for path in paths:
-
         if path.is_dir():
             for file in path.rglob("*"):
                 if file.is_file():
                     suffix = file.suffix
                     try:
                         chunks = symmetric_encrypt(file, password=password)
-                        encrypted_path = file.with_suffix(suffix+".crypt")
+                        encrypted_path = file.with_suffix(suffix + ".crypt")
                         write_chunks(chunks, encrypted_path)
                     except Exception as e:
                         error(e)
@@ -52,7 +67,7 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
         else:
             try:
                 chunks = symmetric_encrypt(path, password=password)
-                encrypted_path = path.with_suffix(path.suffix+".crypt")
+                encrypted_path = path.with_suffix(path.suffix + ".crypt")
                 write_chunks(chunks, encrypted_path)
             except Exception as e:
                 error(e)
@@ -64,21 +79,29 @@ def encrypt(paths: Annotated[List[Path], typer.Argument(
 
 
 @app.command()
-def decrypt(paths: Annotated[List[Path], typer.Argument(
-    help="Path to the file(s) or folder(s) to decrypt",
-    exists=True,
-    readable=True,
-    writable=True,
-    resolve_path=True)],
+def decrypt(
+    paths: Annotated[
+        List[Path],
+        typer.Argument(
+            help="Path to the file(s) or folder(s) to decrypt",
+            exists=True,
+            readable=True,
+            writable=True,
+            resolve_path=True,
+        ),
+    ],
     password: Annotated[
-    str, typer.Option(
-        prompt=True, hide_input=True, help="Password to decrypt the file")
-],
-        shred: Annotated[Optional[bool], typer.Option("--shred", "-s", help="Shred the encrypted file after decryption")] = True):
+        str,
+        typer.Option(prompt=True, hide_input=True, help="Password to decrypt the file"),
+    ],
+    shred: Annotated[
+        Optional[bool],
+        typer.Option("--shred", "-s", help="Shred the encrypted file after decryption"),
+    ] = True,
+):
     """Decrypt file(s) or folder(s) using a password"""
 
     for path in paths:
-
         if path.is_dir():
             for file in path.rglob("*"):
                 if file.is_file():

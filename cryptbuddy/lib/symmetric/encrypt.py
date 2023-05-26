@@ -1,13 +1,16 @@
 from pathlib import Path
 from typing import List
 
-from cryptbuddy.lib.constants import *
-from cryptbuddy.lib.utils import info
 from nacl import secret, utils
 from nacl.bindings import sodium_increment
 
+from cryptbuddy.lib.constants import *
+from cryptbuddy.lib.utils import info
 
-def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> List[bytes]:
+
+def symmetric_encrypt(
+    file: Path, password: str = None, key: bytes = None
+) -> List[bytes]:
     """
     Encrypts a file symmetrically using a password or key. The file is
     encrypted in chunks of given size, and the salt, ops, mem, and nonce
@@ -51,27 +54,25 @@ def symmetric_encrypt(file: Path, password: str = None, key: bytes = None) -> Li
 
     salt = utils.random(SALTBYTES)
     nonce = utils.random(NONCESIZE)
-    encodedOps = str(OPS).encode(encoding='UTF-8')
-    encodedMem = str(MEM).encode(encoding='UTF-8')
+    encodedOps = str(OPS).encode(encoding="UTF-8")
+    encodedMem = str(MEM).encode(encoding="UTF-8")
 
     # Generate the key using the password if not already provided
     if not key:
-        key = KDF(KEYSIZE, password.encode(),
-                  salt, opslimit=OPS, memlimit=MEM)
+        key = KDF(KEYSIZE, password.encode(), salt, opslimit=OPS, memlimit=MEM)
 
     box = secret.SecretBox(key)
     outchunks = []
 
     with open(file, "rb") as infile:
-
         # Append the salt, ops, mem, and nonce to the chunks
         outchunks.append(salt)
         outchunks.append(encodedOps)
-        outchunks.append(b'\n')
+        outchunks.append(b"\n")
         outchunks.append(encodedMem)
-        outchunks.append(b'\n')
+        outchunks.append(b"\n")
         outchunks.append(nonce)
-        outchunks.append(b'\n')
+        outchunks.append(b"\n")
 
         # Encrypt the file data in chunks of given size
         while 1:

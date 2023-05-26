@@ -1,22 +1,23 @@
 from pathlib import Path
 from typing import List
 
+from msgpack import dumps
+from nacl import utils
+from nacl.public import PublicKey, SealedBox
+
 from cryptbuddy.lib.constants import *
 from cryptbuddy.lib.key_io import AppPublicKey
 from cryptbuddy.lib.keychain import Keychain
 from cryptbuddy.lib.symmetric.encrypt import symmetric_encrypt
 from cryptbuddy.lib.utils import *
-from msgpack import dumps
-from nacl import utils
-from nacl.public import PublicKey, SealedBox
 
 
 def asymmetric_encrypt(users: List[str], file: Path) -> List[bytes]:
     """
-    Encrypts a file asymmetrically for multiple users. This function generates 
-    a random symmetric key, encrypts it with the public keys of the specified 
-    users, and stores the encrypted symmetric keys in the file. The file is then 
-    symmetrically encrypted using the symmetric key, and the encrypted symmetric 
+    Encrypts a file asymmetrically for multiple users. This function generates
+    a random symmetric key, encrypts it with the public keys of the specified
+    users, and stores the encrypted symmetric keys in the file. The file is then
+    symmetrically encrypted using the symmetric key, and the encrypted symmetric
     keys are stored in the file as well.
 
     Parameters
