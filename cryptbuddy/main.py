@@ -55,8 +55,8 @@ def init(
     success("Cryptbuddy initialized")
 
 
-@app.command()
-def shred(
+@app.command("shred")
+def shred_cmd(
     paths: Annotated[
         List[Path],
         typer.Argument(
@@ -158,7 +158,7 @@ def encrypt(
             success(f"{path} encrypted")
 
 
-@app.command(rich_help_panel=True)
+@app.command()
 def decrypt(
     paths: Annotated[
         List[Path],
