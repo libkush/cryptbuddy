@@ -210,7 +210,6 @@ def decrypt(
                         info(f"{file} shredded")
                     success(f"{file} decrypted")
             success(f"All files in the {path} decrypted")
-            return
         else:
             try:
                 chunks = asymmetric_decrypt(path, password, private_key_object)
