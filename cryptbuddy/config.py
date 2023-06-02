@@ -1,5 +1,3 @@
-from typing import Any
-
 from ormsgpack import unpackb
 
 from cryptbuddy.constants import CONFIG_FILE, DEFAULT_CONFIG

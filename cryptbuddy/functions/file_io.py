@@ -122,6 +122,16 @@ def untar_directory(path: Path, output: Path, shred_file: bool) -> Path:
 
 
 def get_encrypted_outfile(path: Path, output: Path = None):
+    """
+    Returns the path to the encrypted file.
+
+    ### Parameters
+    - `path` (`Path`): The path to the file to be encrypted.
+    - `output` (`Path`): The path to the output directory.
+
+    ### Returns
+    - `Path`: The path to the encrypted file.
+    """
     output_dir = output if output else path.parent
     encrypted_name = path.with_suffix(path.suffix + ".crypt").name
     if path.is_dir():
@@ -130,6 +140,21 @@ def get_encrypted_outfile(path: Path, output: Path = None):
 
 
 def get_decrypted_outfile(path: Path, output: Path = None):
+    """
+    Returns the path to the decrypted file.
+
+    ### Parameters
+    - `path` (`Path`): The path to the file to be decrypted.
+    - `output` (`Path`): The path to the output directory.
+
+    ### Returns
+    - `Path`: The path to the decrypted file.
+
+    ### Raises
+    - `ValueError`: If the path is a directory.
+    """
+    if path.is_dir():
+        raise ValueError("Cannot get path for a decrypted directory")
     output_dir = output if output else path.parent
     decrypted_name = (
         path.with_suffix(path.suffix[:-6]).name

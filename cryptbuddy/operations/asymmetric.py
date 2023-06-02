@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from nacl.public import PublicKey
-
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.functions.asymmetric import decrypt, encrypt
 from cryptbuddy.functions.file_data import add_meta, parse_data
@@ -11,6 +9,20 @@ from cryptbuddy.structs.types import AsymmetricDecryptOptions, AsymmetricEncrypt
 
 
 def asymmetric_encrypt(path: Path, options: AsymmetricEncryptOptions, output: Path):
+    """
+    Encrypts the given file or folder asymmetrically.
+
+    ### Parameters
+    - `path` (`Path`): The path to the file or folder to be encrypted.
+    - `options` (`AsymmetricEncryptOptions`): The options for encryption.
+    - `output` (`Path`): The path to the output file.
+
+    ### Raises
+    - `FileNotFoundError`: If the file or folder does not exist.
+    """
+    if not path.exists():
+        raise FileNotFoundError("File or folder does not exist")
+
     encrypted_symkeys = {}
     to_shred = options.shred
     for key in options.public_keys:
@@ -56,6 +68,20 @@ def asymmetric_encrypt(path: Path, options: AsymmetricEncryptOptions, output: Pa
 
 
 def asymmetric_decrypt(path: Path, options: AsymmetricDecryptOptions, output: Path):
+    """
+    Decrypts the given file or folder asymmetrically.
+
+    ### Parameters
+    - `path` (`Path`): The path to the file or folder to be decrypted.
+    - `options` (`AsymmetricDecryptOptions`): The options for decryption.
+    - `output` (`Path`): The path to the output file.
+
+    ### Raises
+    - `FileNotFoundError`: If the file or folder does not exist.
+    - `ValueError`: If the file is not asymmetrically encrypted.
+    """
+    if not path.exists():
+        raise FileNotFoundError("File or folder does not exist")
     # read the file data
     encrypted_data = path.read_bytes()
 

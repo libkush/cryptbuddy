@@ -8,6 +8,20 @@ from cryptbuddy.structs.types import SymmetricDecryptOptions, SymmetricEncryptOp
 
 
 def symmetric_encrypt(path: Path, options: SymmetricEncryptOptions, output: Path):
+    """
+    Encrypts the given file or folder symmetrically.
+
+    ### Parameters
+    - `path` (`Path`): The path to the file or folder to be encrypted.
+    - `options` (`SymmetricEncryptOptions`): The options for encryption.
+    - `output` (`Path`): The path to the output file.
+
+    ### Raises
+    - `FileNotFoundError`: If the file or folder does not exist.
+    """
+    if not path.exists():
+        raise FileNotFoundError("File or folder does not exist")
+
     to_shred = options.shred
     meta = {
         "type": options.type,
@@ -53,6 +67,20 @@ def symmetric_encrypt(path: Path, options: SymmetricEncryptOptions, output: Path
 
 
 def symmetric_decrypt(path: Path, options: SymmetricDecryptOptions, output: Path):
+    """
+    Decrypts the given file or folder symmetrically.
+
+    ### Parameters
+    - `path` (`Path`): The path to the file or folder to be decrypted.
+    - `options` (`SymmetricDecryptOptions`): The options for decryption.
+    - `output` (`Path`): The path to the output file.
+
+    ### Raises
+    - `FileNotFoundError`: If the file or folder does not exist.
+    - `ValueError`: If the file is not encrypted symmetrically.
+    """
+    if not path.exists():
+        raise FileNotFoundError("File or folder does not exist")
     # read the file data
     encrypted_data = path.read_bytes()
 
@@ -60,7 +88,7 @@ def symmetric_decrypt(path: Path, options: SymmetricDecryptOptions, output: Path
     meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
 
     if meta["type"] != "symmetric":
-        raise Exception("Invalid file type")
+        raise ValueError("File is not symmetrically encrypted")
 
     ops = meta["ops"]
     mem = meta["mem"]

@@ -7,23 +7,17 @@ from cryptbuddy.structs.app_keys import AppPublicKey
 
 class Keychain:
     """
-    Keychain in CryptBuddy.
+    A keychain for storing public keys.
 
-    Methods
-    -------
-    __init__()
-        Initialize the Keychain.
-    add_key(key: `AppPublicKey`)
-        Add a key to the keychain.
-    get_key(name: `str = None`, id: `int = None`) -> AppPublicKey
-        Retrieve a key from the keychain.
-    get_names() -> `List[Tuple[int, str]]`
-        Retrieve the names of keys in the keychain.
-    delete_key(name: `str = None`, id: `int = None`)
-        Delete a key from the keychain.
-    close()
-        Close the keychain connection.
+    ### Attributes
+    - `conn` (`sqlite3.Connection`): The connection to the database.
+    - `c` (`sqlite3.Cursor`): The cursor for the database.
 
+    ### Methods
+    - `add_key`: Adds a key to the keychain.
+    - `get_key`: Retrieves a key from the keychain.
+    - `get_keys`: Retrieves all keys from the keychain.
+    - `remove_key`: Removes a key from the keychain.
     """
 
     def __init__(self):
@@ -49,10 +43,11 @@ class Keychain:
         """
         Add a key to the keychain.
 
-        Parameters
-        ----------
-        key : `AppPublicKey`
-            Public key object.
+        ### Parameters
+        - `key` (`AppPublicKey`): The key to be added.
+
+        ### Raises
+        - `sqlite3.IntegrityError`: If the key already exists.
 
         """
         self.c.execute(
@@ -64,25 +59,16 @@ class Keychain:
         """
         Retrieve a key from the keychain.
 
-        Parameters
-        ----------
-        name : `str`, optional
-            Name of the key.
-        id : `int`, optional
-            ID of the key.
+        ### Parameters
+        - `name` (`str`, optional): The name of the key.
+        - `id` (`int`, optional): The ID of the key.
 
-        Returns
-        -------
-        `AppPublicKey`
-            Public key object.
+        ### Returns
+        `AppPublicKey`: The key.
 
-        Raises
-        ------
-        `ValueError`
-            If neither name nor ID is specified.
-        `TypeError`
-            If the key is not found.
-
+        ### Raises
+        - `ValueError`: If neither name nor ID is specified.
+        - `TypeError`: If the key is not found.
         """
         if not name and not id:
             raise ValueError("Must specify name or ID")
@@ -100,13 +86,10 @@ class Keychain:
 
     def get_names(self) -> List[Tuple[int, str]]:
         """
-        Retrieve all the names of keys in the keychain.
+        Retrieve all key names from the keychain.
 
-        Returns
-        -------
-        `List[Tuple[int, str]]`
-            List of tuples containing key IDs and names.
-
+        ### Returns
+        `List[Tuple[int, str]]`: A list of key names.
         """
         self.c.execute("SELECT id, name FROM keys")
         return self.c.fetchall()
@@ -115,18 +98,12 @@ class Keychain:
         """
         Delete a key from the keychain.
 
-        Parameters
-        ----------
-        name : `str`, optional
-            Name of the key.
-        id : `int`, optional
-            ID of the key.
+        ### Parameters
+        - `name` (`str`, optional): The name of the key.
+        - `id` (`int`, optional): The ID of the key.
 
-        Raises
-        ------
-        `ValueError`
-            If neither name nor ID is specified.
-
+        ### Raises
+        - `ValueError`: If neither name nor ID is specified.
         """
         if not name and not id:
             raise ValueError("Must specify name or ID")

@@ -3,13 +3,7 @@ from typing import List
 from nacl.bindings import sodium_increment
 from nacl.secret import SecretBox
 
-
-class EncryptionError(Exception):
-    pass
-
-
-class DecryptionError(Exception):
-    pass
+from cryptbuddy.exceptions import DecryptionError, EncryptionError
 
 
 def encrypt_data(
