@@ -127,14 +127,26 @@ def encrypt(
             help="Paths of the file(s) and folder(s) to encrypt",
         ),
     ],
-    symmetric: Annotated[Optional[bool], typer.Option("--symmetric", "-s")] = False,
-    user: Annotated[Optional[List[str]], typer.Option("--user", "-u")] = None,
+    symmetric: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--symmetric", "-s", help="Encrypt file symmetrically using a password"
+        ),
+    ] = False,
+    user: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            "--user",
+            "-u",
+            help="Encrypt a file asymmetrically for user(s). Password is not required",
+        ),
+    ] = None,
     password: Annotated[
         Optional[str],
         typer.Option(
             "--password",
             "-p",
-            help="Password to encrypt the file",
+            help="Password to encrypt the file symmetrically. If not provided, you will be prompted to enter the password",
         ),
     ] = None,
     output: Annotated[
@@ -147,7 +159,7 @@ def encrypt(
             file_okay=False,
             dir_okay=True,
             writable=True,
-            help="Output directory to store the encrypted file",
+            help="Output directory to store the encrypted file(s)",
         ),
     ] = None,
     nonce: Annotated[
@@ -155,7 +167,7 @@ def encrypt(
         typer.Option(
             "--nonce",
             "-n",
-            help="Nonce to encrypt the file",
+            help="Base64 encoded nonce value used to encrypt the file",
         ),
     ] = base64.b64encode(random(NONCESIZE)).decode("utf-8"),
     salt: Annotated[
@@ -163,7 +175,7 @@ def encrypt(
         typer.Option(
             "--salt",
             "-l",
-            help="Salt to encrypt the file",
+            help="Base64 encoded salt to encrypt the file",
         ),
     ] = base64.b64encode(random(SALTBYTES)).decode("utf-8"),
     keysize: Annotated[
@@ -171,7 +183,7 @@ def encrypt(
         typer.Option(
             "--keysize",
             "-k",
-            help="Key size to encrypt the file",
+            help="Key size for the generated symmetric keys",
         ),
     ] = KEYSIZE,
     macsize: Annotated[
@@ -187,7 +199,7 @@ def encrypt(
         typer.Option(
             "--chunksize",
             "-c",
-            help="Chunk size to encrypt the file",
+            help="Size of the chunks to break the file into for encryption",
         ),
     ] = CHUNKSIZE,
     shred: Annotated[
@@ -195,11 +207,14 @@ def encrypt(
         typer.Option(
             "--shred/--no-shred",
             "-d",
-            help="Shred the original file after encryption",
+            help="Whether to shred (permanently delete) the original file after encryption",
         ),
     ] = SHRED,
 ):
-    """Encrypt file(s) or folder(s) for one or more users from your keychain"""
+    """
+    Encrypt file(s) or folder(s) using a password or public keys of one or more
+    users from your keychain
+    """
 
     if symmetric and password is None:
         password = typer.prompt(
@@ -252,9 +267,7 @@ def encrypt(
             asymmetric_encrypt(path, options, encrypted_path)
         return success("File(s) encrypted successfully")
 
-    error(
-        "Please specify either symmetric (with password) or asymmetric (with user) encryption"
-    )
+    error("Please specify either symmetric (with password) or users for encryption")
 
 
 @app.command()
@@ -276,16 +289,21 @@ def decrypt(
             "-p",
             prompt=True,
             hide_input=True,
-            help="Password to decrypt the file",
+            help="Password to decrypt the file if encrypted symmetrically, or to decrypt your private key if encrypted asymmetrically",
         ),
     ],
-    symmetric: Annotated[Optional[bool], typer.Option("--symmetric", "-s")] = False,
+    symmetric: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--symmetric", "-s", help="Decrypt the file symmetrically using a password"
+        ),
+    ] = False,
     shred: Annotated[
         Optional[bool],
         typer.Option(
             "--shred/--no-shred",
             "-d",
-            help="Shred the original file after decryption",
+            help="Whether to shred (permanently delete) the original file after decryption",
         ),
     ] = SHRED,
     output: Annotated[
@@ -298,11 +316,14 @@ def decrypt(
             file_okay=False,
             dir_okay=True,
             writable=True,
-            help="Output directory to store the decrypted file",
+            help="Output directory to store the decrypted file(s)",
         ),
     ] = None,
 ):
-    """Decrypt file(s) or folder(s)"""
+    """
+    Decrypt file(s) or folder(s) symmetrically using a password or
+    asymmetrically using your private key
+    """
 
     if symmetric and password:
         options = SymmetricDecryptOptions(
