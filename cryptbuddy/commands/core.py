@@ -34,7 +34,7 @@ __version__ = get_distribution("cryptbuddy").version
 
 
 app = typer.Typer(
-    name="cryptbuddy",
+    name="CryptBuddy",
     help="A CLI tool for encryption and decryption",
     add_completion=True,
     no_args_is_help=True,
@@ -52,7 +52,7 @@ def version_callback(value: bool):
 @app.callback()
 def common(
     ctx: typer.Context,
-    version: bool = typer.Option(None, "--version", callback=version_callback),
+    version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
 ):
     pass
 
