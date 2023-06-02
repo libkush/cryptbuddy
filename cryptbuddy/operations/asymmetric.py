@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from rich.progress import Progress
+
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.functions.asymmetric import decrypt, encrypt
 from cryptbuddy.functions.file_data import add_meta, parse_data
@@ -8,7 +10,12 @@ from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.structs.types import AsymmetricDecryptOptions, AsymmetricEncryptOptions
 
 
-def asymmetric_encrypt(path: Path, options: AsymmetricEncryptOptions, output: Path):
+def asymmetric_encrypt(
+    path: Path,
+    options: AsymmetricEncryptOptions,
+    output: Path,
+    progress: Progress | None = None,
+):
     """
     Encrypts the given file or folder asymmetrically.
 
@@ -48,9 +55,21 @@ def asymmetric_encrypt(path: Path, options: AsymmetricEncryptOptions, output: Pa
 
     file_data = path.read_bytes()
 
+    task = (
+        progress.add_task(f"[cyan]Encrypting... {path.name}", total=len(file_data))
+        if progress
+        else None
+    )
+
     # encrypt the file data
     encrypted_data = encrypt_data(
-        file_data, options.symkey, options.nonce, options.chunksize, options.macsize
+        file_data,
+        options.symkey,
+        options.nonce,
+        options.chunksize,
+        options.macsize,
+        progress,
+        task,
     )
 
     # add metadata
@@ -67,7 +86,12 @@ def asymmetric_encrypt(path: Path, options: AsymmetricEncryptOptions, output: Pa
     write_chunks(encrypted_data, output)
 
 
-def asymmetric_decrypt(path: Path, options: AsymmetricDecryptOptions, output: Path):
+def asymmetric_decrypt(
+    path: Path,
+    options: AsymmetricDecryptOptions,
+    output: Path,
+    progress: Progress | None = None,
+):
     """
     Decrypts the given file or folder asymmetrically.
 
@@ -82,8 +106,15 @@ def asymmetric_decrypt(path: Path, options: AsymmetricDecryptOptions, output: Pa
     """
     if not path.exists():
         raise FileNotFoundError("File or folder does not exist")
+
     # read the file data
     encrypted_data = path.read_bytes()
+
+    task = (
+        progress.add_task(f"[cyan]Decrypting... {path.name}", total=len(encrypted_data))
+        if progress
+        else None
+    )
 
     # get the metadata
     meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
@@ -103,7 +134,9 @@ def asymmetric_decrypt(path: Path, options: AsymmetricDecryptOptions, output: Pa
     symkey = decrypt(private_key, mykey)
 
     # decrypt the file data
-    file_data = decrypt_data(encrypted_data, chunksize, symkey, nonce, macsize)
+    file_data = decrypt_data(
+        encrypted_data, chunksize, symkey, nonce, macsize, progress, task
+    )
 
     if options.shred:
         shred(path)

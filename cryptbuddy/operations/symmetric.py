@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from rich.progress import Progress, TaskID
+
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.functions.file_data import add_meta, parse_data
 from cryptbuddy.functions.file_io import shred, tar_directory, write_chunks
@@ -7,7 +9,12 @@ from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.structs.types import SymmetricDecryptOptions, SymmetricEncryptOptions
 
 
-def symmetric_encrypt(path: Path, options: SymmetricEncryptOptions, output: Path):
+def symmetric_encrypt(
+    path: Path,
+    options: SymmetricEncryptOptions,
+    output: Path,
+    progress: Progress = None,
+):
     """
     Encrypts the given file or folder symmetrically.
 
@@ -43,6 +50,12 @@ def symmetric_encrypt(path: Path, options: SymmetricEncryptOptions, output: Path
 
     file_data = path.read_bytes()
 
+    task = (
+        progress.add_task(f"[cyan]Encrypting... {path.name}", total=len(file_data))
+        if progress
+        else None
+    )
+
     # encrypt the file data
     encrypted_data = encrypt_data(
         file_data,
@@ -50,6 +63,8 @@ def symmetric_encrypt(path: Path, options: SymmetricEncryptOptions, output: Path
         options.nonce,
         options.chunksize,
         options.macsize,
+        progress,
+        task,
     )
 
     # add metadata
@@ -66,7 +81,12 @@ def symmetric_encrypt(path: Path, options: SymmetricEncryptOptions, output: Path
     write_chunks(encrypted_data, output)
 
 
-def symmetric_decrypt(path: Path, options: SymmetricDecryptOptions, output: Path):
+def symmetric_decrypt(
+    path: Path,
+    options: SymmetricDecryptOptions,
+    output: Path,
+    progress: Progress = None,
+):
     """
     Decrypts the given file or folder symmetrically.
 
@@ -83,6 +103,12 @@ def symmetric_decrypt(path: Path, options: SymmetricDecryptOptions, output: Path
         raise FileNotFoundError("File or folder does not exist")
     # read the file data
     encrypted_data = path.read_bytes()
+
+    task = (
+        progress.add_task(f"[cyan]Decrypting... {path.name}", total=len(encrypted_data))
+        if progress
+        else None
+    )
 
     # get the metadata
     meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
@@ -107,6 +133,8 @@ def symmetric_decrypt(path: Path, options: SymmetricDecryptOptions, output: Path
         key,
         nonce,
         macsize,
+        progress,
+        task,
     )
 
     if options.shred:

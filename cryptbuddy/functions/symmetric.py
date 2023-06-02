@@ -2,6 +2,7 @@ from typing import List
 
 from nacl.bindings import sodium_increment
 from nacl.secret import SecretBox
+from rich.progress import Progress, TaskID
 
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
 
@@ -12,6 +13,8 @@ def encrypt_data(
     nonce: bytes,
     chunksize: int,
     macsize: int,
+    progress: Progress | None = None,
+    task: TaskID | None = None,
 ) -> List[bytes]:
     """
     Encrypts the given data using the provided key and nonce.
@@ -32,6 +35,7 @@ def encrypt_data(
     """
     box = SecretBox(key)
     out = []
+
     while 1:
         chunk = data[:chunksize]
         if len(chunk) == 0:
@@ -44,6 +48,8 @@ def encrypt_data(
         out.append(outchunk)
         nonce = sodium_increment(nonce)
         data = data[chunksize:]
+        progress.update(task, advance=chunksize) if progress else None
+
     return out
 
 
@@ -53,6 +59,8 @@ def decrypt_data(
     key: bytes,
     nonce: bytes,
     macsize: int,
+    progress: Progress | None = None,
+    task: TaskID | None = None,
 ) -> List[bytes]:
     """
     Decrypts the given data using the provided key and nonce.
@@ -85,4 +93,5 @@ def decrypt_data(
         out.append(dchunk)
         nonce = sodium_increment(nonce)
         data = data[chunksize + macsize :]
+        progress.update(task, advance=chunksize) if progress else None
     return out

@@ -7,6 +7,7 @@ import typer
 from nacl.utils import random
 from password_strength import PasswordStats
 from pkg_resources import get_distribution
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated
 
 import cryptbuddy.commands.keychain as chain
@@ -224,6 +225,12 @@ def encrypt(
     bnonce = base64.b64decode(nonce)
     bsalt = base64.b64decode(salt)
 
+    progress = Progress(
+        SpinnerColumn(),
+        BarColumn(),
+        TextColumn("[progress.description]{task.description}"),
+    )
+
     if symmetric and password:
         options = SymmetricEncryptOptions(
             mem=MEM,
@@ -236,9 +243,11 @@ def encrypt(
             chunksize=chunksize,
             shred=shred,
         )
+        progress.start()
         for path in paths:
             encrypted_path = get_encrypted_outfile(path, output)
-            symmetric_encrypt(path, options, encrypted_path)
+            symmetric_encrypt(path, options, encrypted_path, progress)
+        progress.stop()
         return success("File(s) encrypted successfully")
 
     if not symmetric and user:
@@ -262,9 +271,11 @@ def encrypt(
             mem=MEM,
             ops=OPS,
         )
+        progress.start()
         for path in paths:
             encrypted_path = get_encrypted_outfile(path, output)
-            asymmetric_encrypt(path, options, encrypted_path)
+            asymmetric_encrypt(path, options, encrypted_path, progress)
+        progress.stop()
         return success("File(s) encrypted successfully")
 
     error("Please specify either symmetric (with password) or users for encryption")
@@ -325,16 +336,24 @@ def decrypt(
     asymmetrically using your private key
     """
 
+    progress = Progress(
+        SpinnerColumn(),
+        BarColumn(),
+        TextColumn("[progress.description]{task.description}"),
+    )
+
     if symmetric and password:
         options = SymmetricDecryptOptions(
             password=password,
             shred=shred,
         )
+        progress.start()
         for path in paths:
             decrypted_path = get_decrypted_outfile(path, output)
-            symmetric_decrypt(path, options, decrypted_path)
+            symmetric_decrypt(path, options, decrypted_path, progress)
             if decrypted_path.suffix == ".tar":
                 untar_directory(decrypted_path, decrypted_path.parent, shred)
+        progress.stop()
         success("File(s) decrypted successfully")
 
     elif not symmetric and password:
@@ -345,11 +364,13 @@ def decrypt(
             private_key=private_key,
             shred=shred,
         )
+        progress.start()
         for path in paths:
             decrypted_path = get_decrypted_outfile(path, output)
-            asymmetric_decrypt(path, options, decrypted_path)
+            asymmetric_decrypt(path, options, decrypted_path, progress)
             if decrypted_path.suffix == ".tar":
                 untar_directory(decrypted_path, decrypted_path.parent, shred)
+        progress.stop()
         success("File(s) decrypted successfully")
 
 

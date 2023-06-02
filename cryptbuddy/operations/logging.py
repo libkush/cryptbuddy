@@ -1,7 +1,7 @@
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 
 from rich import console
-from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
+from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn, track
 from rich.table import Table
 
 process = Progress(
