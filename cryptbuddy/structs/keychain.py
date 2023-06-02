@@ -1,11 +1,8 @@
 import sqlite3
 from typing import List, Tuple
 
-from cryptbuddy.lib.file_io import create_directories, data_dir
-from cryptbuddy.lib.key_io import AppPublicKey
-from cryptbuddy.lib.utils import info
-
-create_directories()
+from cryptbuddy.config import DATA_DIR
+from cryptbuddy.structs.app_keys import AppPublicKey
 
 
 class Keychain:
@@ -30,7 +27,7 @@ class Keychain:
     """
 
     def __init__(self):
-        conn = sqlite3.connect(f"{data_dir}/keychain.db")
+        conn = sqlite3.connect(f"{DATA_DIR}/keychain.db")
         c = conn.cursor()
 
         # Create the keys table if it doesn't exist
@@ -58,13 +55,12 @@ class Keychain:
             Public key object.
 
         """
-        info(f"Adding key {key.meta.name} to keychain")
         self.c.execute(
             "INSERT INTO keys (name, key) VALUES (?, ?)", (key.meta.name, key.packed)
         )
         self.conn.commit()
 
-    def get_key(self, name: str = None, id: int = None) -> AppPublicKey:
+    def get_key(self, name: str | None = None, id: int | None = None) -> AppPublicKey:
         """
         Retrieve a key from the keychain.
 
@@ -92,17 +88,15 @@ class Keychain:
             raise ValueError("Must specify name or ID")
 
         if id:
-            info(f"Retrieving key {id} from keychain")
             self.c.execute("SELECT key FROM keys WHERE id = ?", (id,))
         else:
-            info(f"Retrieving key {name} from keychain")
             self.c.execute("SELECT key FROM keys WHERE name = ?", (name,))
 
         result = self.c.fetchone()
         if result is None:
             raise TypeError("Key not found")
 
-        return AppPublicKey.from_packed(result[0])
+        return AppPublicKey.from_data(result[0])
 
     def get_names(self) -> List[Tuple[int, str]]:
         """
@@ -117,7 +111,7 @@ class Keychain:
         self.c.execute("SELECT id, name FROM keys")
         return self.c.fetchall()
 
-    def delete_key(self, name: str = None, id: int = None) -> None:
+    def delete_key(self, name: str | None = None, id: int | None = None) -> None:
         """
         Delete a key from the keychain.
 
@@ -138,10 +132,8 @@ class Keychain:
             raise ValueError("Must specify name or ID")
 
         if id:
-            info(f"Deleting key {id} from keychain")
             self.c.execute("DELETE FROM keys WHERE id = ?", (id,))
         else:
-            info(f"Deleting key {name} from keychain")
             self.c.execute("DELETE FROM keys WHERE name = ?", (name,))
 
         self.conn.commit()

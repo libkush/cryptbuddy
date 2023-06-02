@@ -4,11 +4,11 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
-from cryptbuddy.lib.key_io import AppPublicKey
-from cryptbuddy.lib.keychain import Keychain
-from cryptbuddy.lib.utils import error, print_keys, success
+from cryptbuddy.operations.logging import error, print_keys, success
+from cryptbuddy.structs.app_keys import AppPublicKey
+from cryptbuddy.structs.keychain import Keychain
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True, add_completion=True)
 chain = Keychain()
 
 

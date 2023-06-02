@@ -1,4 +1,5 @@
-from cryptbuddy.commands.main import app
+from cryptbuddy.commands.core import app
+
 
 # TODO: Add a command to edit details of the user
 
