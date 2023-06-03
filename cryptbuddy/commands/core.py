@@ -47,6 +47,7 @@ app.add_typer(chain.app, name="keychain", help="Manage your keychain")
 
 
 def version_callback(value: bool):
+    """Callback for the --version option"""
     if value:
         print(f"CryptBuddy Version: {__version__}")
         raise typer.Exit()
@@ -57,6 +58,7 @@ def common(
     ctx: typer.Context,
     version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
 ):
+    """A CLI tool for encryption and decryption"""
     pass
 
 
