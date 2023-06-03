@@ -58,7 +58,7 @@ def shred(path: Path) -> None:
     - `FileNotFoundError`: If the file or folder does not exist.
     """
     # Check if the path exists
-    if not (path.exists()):
+    if not path.exists():
         raise FileNotFoundError("File does not exist")
 
     paths = [path]
