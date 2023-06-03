@@ -70,10 +70,14 @@ class AppPrivateKey(BaseKey):
 
     ### Methods
     - `save(path: Path)`: Save the key to a file.
-    - `decrypt_key(key: AppPrivateKey, password: str)`: Decrypt an AppPrivateKey instance.
-    - `decrypted_key(password: str)`: Return a decrypted AppPrivateKey instance.
-    - `from_data(data: bytes, password: str)`: Create an AppPrivateKey instance from encrypted data.
-    - `from_file(path: Path, password: str)`: Create an AppPrivateKey instance from a private key file.
+    - `decrypt_key(key: AppPrivateKey, password: str)`: Decrypt an
+        AppPrivateKey instance.
+    - `decrypted_key(password: str)`: Return a decrypted
+        AppPrivateKey instance.
+    - `from_data(data: bytes, password: str)`: Create an AppPrivateKey
+        instance from encrypted data.
+    - `from_file(path: Path, password: str)`: Create an AppPrivateKey
+        instance from a private key file.
 
 
     ### Example
@@ -262,8 +266,10 @@ class AppPublicKey(BaseKey):
 
         ### Methods
         - `save(path: Path)`: Save the key to a file.
-        - `from_data(packed: bytes)`: Create an instance of `AppPublicKey` from packed data.
-        - `from_file(file: Path)`: Create an instance of `AppPublicKey` from a file.
+        - `from_data(packed: bytes)`: Create an instance
+            of `AppPublicKey` from packed data.
+        - `from_file(file: Path)`: Create an instance of
+            `AppPublicKey` from a file.
 
         ### Raises
         - `ValueError`: If the key is not a `PublicKey` instance.
@@ -279,7 +285,11 @@ class AppPublicKey(BaseKey):
         key = PrivateKey.generate()
         public_key = key.public_key()
 
-        app_public_key = AppPublicKey(public_key, name="John Doe", email="john@example.com")
+        app_public_key = AppPublicKey(
+            public_key,
+            name="John Doe",
+            email="john@example.com"
+        )
         app_public_key.save(Path("public_key.cryptbuddy"))
         """
         super().__init__(*args, **kwargs)
