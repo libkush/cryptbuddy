@@ -61,22 +61,23 @@ class DecryptOptions:
 
 
 class SymmetricEncryptOptions(EncryptOptions):
+    """
+    Options for symmetric encryption.
+
+    ### Attributes
+    - `type` (`str`): The type of encryption.
+    - `key` (`bytes`): The encryption key.
+
+    ### Parameters
+    - `password` (`str`): The password to be used for encryption.
+    """
+
     def __init__(
         self,
         password: str,
         *args,
         **kwargs,
     ):
-        """
-        Options for symmetric encryption.
-
-        ### Attributes
-        - `type` (`str`): The type of encryption.
-        - `key` (`bytes`): The encryption key.
-
-        ### Parameters
-        - `password` (`str`): The password to be used for encryption.
-        """
         super().__init__(*args, **kwargs)
         self.type = "symmetric"
         self.key = kdf(
@@ -89,25 +90,26 @@ class SymmetricEncryptOptions(EncryptOptions):
 
 
 class SymmetricDecryptOptions(DecryptOptions):
+    """
+    Options for symmetric decryption.
+
+    ### Attributes
+    - `type` (`str`): The type of encryption.
+    - `password` (`str`): The password to be used for decryption.
+
+    ### Methods
+    - `get_key`: Returns the decryption key.
+
+    ### Parameters
+    - `password` (`str`): The password to be used for decryption.
+    """
+
     def __init__(
         self,
         password: str,
         *args,
         **kwargs,
     ):
-        """
-        Options for symmetric decryption.
-
-        ### Attributes
-        - `type` (`str`): The type of encryption.
-        - `password` (`str`): The password to be used for decryption.
-
-        ### Methods
-        - `get_key`: Returns the decryption key.
-
-        ### Parameters
-        - `password` (`str`): The password to be used for decryption.
-        """
         super().__init__(*args, **kwargs)
         self.type = "symmetric"
         self.password = password

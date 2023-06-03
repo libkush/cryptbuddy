@@ -248,48 +248,49 @@ class AppPrivateKey(BaseKey):
 
 
 class AppPublicKey(BaseKey):
+    """
+    Create an instance of `AppPublicKey`.
+
+    ### Parameters
+    - `key` (`PublicKey`): The public key to encrypt.
+    - `name` (`str`): The name of the key owner.
+
+    ### Attributes
+    - 'key' (`PublicKey`): The public key.
+    - `data` (`List[bytes]`): The encrypted key data.
+    - `meta` (`AppKeyMeta`): The metadata of the key.
+    - `packed` (`bytes`): The packed key data.
+
+    ### Methods
+    - `save(path: Path)`: Save the key to a file.
+    - `from_data(packed: bytes)`: Create an instance
+        of `AppPublicKey` from packed data.
+    - `from_file(file: Path)`: Create an instance of
+        `AppPublicKey` from a file.
+
+    ### Raises
+    - `ValueError`: If the key is not a `PublicKey` instance.
+
+    ### Notes
+    - The key is not encrypted, but metadata is added to the key data.
+
+    ### Example
+    ```python
+    from pathlib import Path
+    from cryptbuddy.utils.app_keys import AppPublicKey, PublicKey
+
+    key = PrivateKey.generate()
+    public_key = key.public_key()
+
+    app_public_key = AppPublicKey(
+        public_key,
+        name="John Doe",
+        email="john@example.com"
+    )
+    app_public_key.save(Path("public_key.cryptbuddy"))
+    """
+
     def __init__(self, key: PublicKey, *args, **kwargs):
-        """
-        Create an instance of `AppPublicKey`.
-
-        ### Parameters
-        - `key` (`PublicKey`): The public key to encrypt.
-        - `name` (`str`): The name of the key owner.
-
-        ### Attributes
-        - 'key' (`PublicKey`): The public key.
-        - `data` (`List[bytes]`): The encrypted key data.
-        - `meta` (`AppKeyMeta`): The metadata of the key.
-        - `packed` (`bytes`): The packed key data.
-
-        ### Methods
-        - `save(path: Path)`: Save the key to a file.
-        - `from_data(packed: bytes)`: Create an instance
-            of `AppPublicKey` from packed data.
-        - `from_file(file: Path)`: Create an instance of
-            `AppPublicKey` from a file.
-
-        ### Raises
-        - `ValueError`: If the key is not a `PublicKey` instance.
-
-        ### Notes
-        - The key is not encrypted, but metadata is added to the key data.
-
-        ### Example
-        ```python
-        from pathlib import Path
-        from cryptbuddy.utils.app_keys import AppPublicKey, PublicKey
-
-        key = PrivateKey.generate()
-        public_key = key.public_key()
-
-        app_public_key = AppPublicKey(
-            public_key,
-            name="John Doe",
-            email="john@example.com"
-        )
-        app_public_key.save(Path("public_key.cryptbuddy"))
-        """
         super().__init__(*args, **kwargs)
         metadata = {
             "type": "CB_PUB_KEY",

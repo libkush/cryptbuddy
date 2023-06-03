@@ -1,6 +1,6 @@
 class EncryptionError(Exception):
-    pass
+    """Raised when an error occurs during encryption."""
 
 
 class DecryptionError(Exception):
-    pass
+    """Raised when an error occurs during decryption."""
