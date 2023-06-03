@@ -176,11 +176,14 @@ class AppPrivateKey(BaseKey):
             opslimit=meta["ops"],
             memlimit=meta["mem"],
         )
-        decrypted_data = b"".join(
-            decrypt_data(
-                data, meta["chunksize"], symkey, meta["nonce"], meta["macsize"]
+        try:
+            decrypted_data = b"".join(
+                decrypt_data(
+                    data, meta["chunksize"], symkey, meta["nonce"], meta["macsize"]
+                )
             )
-        )
+        except DecryptionError as e:
+            raise DecryptionError("Could not decrypt key") from e
         private_key = PrivateKey(decrypted_data)
         return private_key, meta
 
@@ -215,7 +218,6 @@ class AppPrivateKey(BaseKey):
         ### Raises
         - `DecryptionError`: If the key could not be decrypted.
         """
-
         decrypted_key, meta = cls.decrypt_key(packed, password)
         return AppPrivateKey(
             decrypted_key, password, name=meta["name"], email=meta["email"]
@@ -237,7 +239,6 @@ class AppPrivateKey(BaseKey):
         - `FileNotFoundError`: If the file does not exist.
         - `DecryptionError`: If the key could not be decrypted.
         """
-
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")
         data = file.read_bytes()

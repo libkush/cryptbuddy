@@ -3,10 +3,12 @@ from pathlib import Path
 from rich.progress import Progress
 
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
+from cryptbuddy.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.functions.asymmetric import decrypt, encrypt
 from cryptbuddy.functions.file_data import add_meta, parse_data
 from cryptbuddy.functions.file_io import shred, tar_directory, write_chunks
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
+from cryptbuddy.operations.logging import error
 from cryptbuddy.structs.types import AsymmetricDecryptOptions, AsymmetricEncryptOptions
 
 
@@ -23,19 +25,22 @@ def asymmetric_encrypt(
     - `path` (`Path`): The path to the file or folder to be encrypted.
     - `options` (`AsymmetricEncryptOptions`): The options for encryption.
     - `output` (`Path`): The path to the output file.
-
-    ### Raises
-    - `FileNotFoundError`: If the file or folder does not exist.
+    - `progress` (`Progress`, optional): A rich progress instance.
     """
     if not path.exists():
-        raise FileNotFoundError("File or folder does not exist")
+        raise FileNotFoundError(f"Path {path} does not exist")
 
     encrypted_symkeys = {}
     to_shred = options.shred
     for key in options.public_keys:
         name = key.meta.name
         public_key = key.key
-        encrypted_symkey = encrypt(public_key, options.symkey)
+        try:
+            encrypted_symkey = encrypt(public_key, options.symkey)
+        except EncryptionError as e:
+            err = EncryptionError(f"Failed to encrypt symmetric key for {name}")
+            err.__cause__ = e
+            return error(err, progress, task)
         encrypted_symkeys[name] = encrypted_symkey
 
     meta = {
@@ -61,16 +66,21 @@ def asymmetric_encrypt(
         else None
     )
 
-    # encrypt the file data
-    encrypted_data = encrypt_data(
-        file_data,
-        options.symkey,
-        options.nonce,
-        options.chunksize,
-        options.macsize,
-        progress,
-        task,
-    )
+    try:
+        # encrypt the file data
+        encrypted_data = encrypt_data(
+            file_data,
+            options.symkey,
+            options.nonce,
+            options.chunksize,
+            options.macsize,
+            progress,
+            task,
+        )
+    except EncryptionError as e:
+        err = EncryptionError(f"Failed to encrypt file data for {path.name}")
+        err.__cause__ = e
+        return error(err, progress, task)
 
     # add metadata
     encrypted_data = add_meta(
@@ -99,13 +109,10 @@ def asymmetric_decrypt(
     - `path` (`Path`): The path to the file or folder to be decrypted.
     - `options` (`AsymmetricDecryptOptions`): The options for decryption.
     - `output` (`Path`): The path to the output file.
-
-    ### Raises
-    - `FileNotFoundError`: If the file or folder does not exist.
-    - `ValueError`: If the file is not asymmetrically encrypted.
+    - `progress` (`Progress`, optional): A rich progress instance.
     """
     if not path.exists():
-        raise FileNotFoundError("File or folder does not exist")
+        raise FileNotFoundError(f"Path {path} does not exist")
 
     # read the file data
     encrypted_data = path.read_bytes()
@@ -117,26 +124,59 @@ def asymmetric_decrypt(
     )
 
     # get the metadata
-    meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
+    try:
+        meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
+    except ValueError as e:
+        err = ValueError(
+            f"File {path} is corrupt, or a different delimiter was used during encryption"
+        )
+        err.__cause__ = e
+        return error(err, progress, task)
 
     if not meta["type"] == "asymmetric":
-        raise ValueError("File is not asymmetrically encrypted")
+        return error(
+            ValueError(f"File {path} is not asymmetrically encrypted"), progress, task
+        )
 
     encrypted_symkeys: dict[str, bytes] = meta["encrypted_symkeys"]
     nonce = meta["nonce"]
     macsize = meta["macsize"]
     chunksize = meta["chunksize"]
 
+    if not (encrypted_symkeys and nonce and macsize and chunksize):
+        return error(ValueError(f"File {path} is corrupt"), progress, task)
+
+    try:
+        private_key = options.private_key.decrypted_key(options.password)
+    except DecryptionError as e:
+        err = DecryptionError(f"Failed to decrypt private key for {options.user}")
+        err.__cause__ = e
+        return error(err, progress, task)
+
     mykey = encrypted_symkeys[options.user]
-    private_key = options.private_key.decrypted_key(options.password)
+    if not mykey:
+        err = ValueError(f"File {path} was not encrypted for {options.user}")
+        return error(err, progress, task)
 
     # decrypt symkey
-    symkey = decrypt(private_key, mykey)
+    try:
+        symkey = decrypt(private_key, mykey)
+    except DecryptionError as e:
+        err = DecryptionError(
+            f"Failed to decrypt symmetric key for {options.user} in {path}"
+        )
+        err.__cause__ = e
+        return error(err, progress, task)
 
     # decrypt the file data
-    file_data = decrypt_data(
-        encrypted_data, chunksize, symkey, nonce, macsize, progress, task
-    )
+    try:
+        file_data = decrypt_data(
+            encrypted_data, chunksize, symkey, nonce, macsize, progress, task
+        )
+    except DecryptionError as e:
+        err = DecryptionError(f"Failed to decrypt file data for {path.name}")
+        err.__cause__ = e
+        return error(err, progress, task)
 
     if options.shred:
         shred(path)

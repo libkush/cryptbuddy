@@ -1,14 +1,26 @@
-from typing import Iterable, List, Tuple
+import logging
+from logging.handlers import RotatingFileHandler
+from typing import List, Tuple
 
-from rich import console
-from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn, track
+from rich.console import Console
+from rich.progress import Progress, TaskID
 from rich.table import Table
+from rich.text import Text
 
-process = Progress(
-    SpinnerColumn(),
-    TextColumn("[bold blue]{task.description}"),
-    transient=True,
+from cryptbuddy.config import DATA_DIR
+
+console = Console()
+
+error_handler = RotatingFileHandler(
+    DATA_DIR / "errors.log", maxBytes=1024, backupCount=5
 )
+error_handler.setLevel(logging.ERROR)
+error_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+)
+error_logger = logging.getLogger("cb_errors")
+error_logger.setLevel(logging.ERROR)
+error_logger.addHandler(error_handler)
 
 
 def print_keys(records: List[Tuple[int, str]]):
@@ -22,29 +34,26 @@ def print_keys(records: List[Tuple[int, str]]):
     console.print(table)
 
 
-def add_task(msg: str, total: int | None = None) -> TaskID:
-    return process.add_task(description=msg, total=total)
-
-
-def update_task(task_id: TaskID, msg: str):
-    process.update(task_id, description=msg, advance=1)
-
-
 def info(*msgs: object):
-    process.console.print(f"[bold blue]", *msgs)
+    message = " ".join(str(msg) for msg in msgs)
+    text = Text(message, style="bold blue")
+    console.print(text)
 
 
-def error(*msgs: object):
-    process.console.print(f"[bold red]", *msgs)
+def error(e: Exception, progress: Progress = None, task: TaskID = None):
+    error_logger.exception(e, exc_info=True)
+    message = str(e)
+    text = Text(message, style="bold red")
+    if progress and task:
+        progress.update(
+            task,
+            description=f"[bold red]Error: {message}",
+        )
+    else:
+        console.print(text)
 
 
 def success(*msgs: object):
-    process.console.print(f"[bold green]", *msgs)
-
-
-def start_process():
-    process.start()
-
-
-def stop_process():
-    process.stop()
+    message = " ".join(str(msg) for msg in msgs)
+    text = Text(message, style="bold green")
+    console.print(text)

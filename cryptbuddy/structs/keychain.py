@@ -32,8 +32,12 @@ class Keychain:
                 key BLOB NOT NULL
             )
         """
-        c.execute(create_query)
-        conn.commit()
+
+        try:
+            c.execute(create_query)
+            conn.commit()
+        except sqlite3.OperationalError:
+            raise sqlite3.OperationalError("Unable to create keys table")
 
         # Set the connection and cursor attributes
         self.conn = conn

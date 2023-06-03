@@ -43,7 +43,7 @@ def encrypt_data(
         try:
             outchunk = box.encrypt(chunk, nonce).ciphertext
         except Exception as e:
-            raise EncryptionError("Error during encryption") from e
+            raise EncryptionError("Error encrypting chunk") from e
         assert len(outchunk) == len(chunk) + macsize
         out.append(outchunk)
         nonce = sodium_increment(nonce)
@@ -88,7 +88,7 @@ def decrypt_data(
         try:
             dchunk = box.decrypt(rchunk, nonce)
         except Exception as e:
-            raise DecryptionError("Error during decryption") from e
+            raise DecryptionError("Error decrypting chunk") from e
         assert len(dchunk) == len(rchunk) - macsize
         out.append(dchunk)
         nonce = sodium_increment(nonce)

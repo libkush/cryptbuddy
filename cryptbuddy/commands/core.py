@@ -8,6 +8,7 @@ from nacl.utils import random
 from password_strength import PasswordStats
 from pkg_resources import get_distribution
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+from rich.style import Style
 from typing_extensions import Annotated
 
 import cryptbuddy.commands.keychain as chain
@@ -78,12 +79,19 @@ def init(
     Initialize cryptbuddy by generating a key-pair and creating the
     keychain database
     """
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[bold blue]{task.description}"),
+        transient=True,
+    )
+
     stats = PasswordStats(password).strength()
     if stats < 0.3:
         error("Password is too weak!")
 
+    progress.start()
     try:
-        initialize(name, email, password)
+        initialize(name, email, password, progress)
     except Exception as e:
         error(e)
     success("Cryptbuddy initialized")
@@ -227,8 +235,11 @@ def encrypt(
 
     progress = Progress(
         SpinnerColumn(),
-        BarColumn(),
-        TextColumn("[progress.description]{task.description}"),
+        TextColumn("{task.description}[progress.description]"),
+        BarColumn(
+            style=Style(color="red"),
+            complete_style=Style(color="green"),
+        ),
     )
 
     if symmetric and password:
@@ -246,7 +257,10 @@ def encrypt(
         progress.start()
         for path in paths:
             encrypted_path = get_encrypted_outfile(path, output)
-            symmetric_encrypt(path, options, encrypted_path, progress)
+            try:
+                symmetric_encrypt(path, options, encrypted_path, progress)
+            except Exception:
+                continue
         progress.stop()
         return success("File(s) encrypted successfully")
 
@@ -258,7 +272,7 @@ def encrypt(
             try:
                 public_keys.append(keychain.get_key(u))
             except Exception as e:
-                error(e)
+                return error(e)
         options = AsymmetricEncryptOptions(
             symkey=symkey,
             public_keys=public_keys,
@@ -274,7 +288,10 @@ def encrypt(
         progress.start()
         for path in paths:
             encrypted_path = get_encrypted_outfile(path, output)
-            asymmetric_encrypt(path, options, encrypted_path, progress)
+            try:
+                asymmetric_encrypt(path, options, encrypted_path, progress)
+            except Exception:
+                continue
         progress.stop()
         return success("File(s) encrypted successfully")
 
@@ -338,8 +355,11 @@ def decrypt(
 
     progress = Progress(
         SpinnerColumn(),
-        BarColumn(),
-        TextColumn("[progress.description]{task.description}"),
+        TextColumn("{task.description}[progress.description]"),
+        BarColumn(
+            style=Style(color="red"),
+            complete_style=Style(color="green"),
+        ),
     )
 
     if symmetric and password:
@@ -350,8 +370,11 @@ def decrypt(
         progress.start()
         for path in paths:
             decrypted_path = get_decrypted_outfile(path, output)
-            symmetric_decrypt(path, options, decrypted_path, progress)
-            if decrypted_path.suffix == ".tar":
+            try:
+                symmetric_decrypt(path, options, decrypted_path, progress)
+            except Exception:
+                continue
+            if decrypted_path.exists() and decrypted_path.suffix == ".tar":
                 untar_directory(decrypted_path, decrypted_path.parent, shred)
         progress.stop()
         success("File(s) decrypted successfully")
@@ -367,8 +390,11 @@ def decrypt(
         progress.start()
         for path in paths:
             decrypted_path = get_decrypted_outfile(path, output)
-            asymmetric_decrypt(path, options, decrypted_path, progress)
-            if decrypted_path.suffix == ".tar":
+            try:
+                asymmetric_decrypt(path, options, decrypted_path, progress)
+            except Exception:
+                continue
+            if decrypted_path.exists() and decrypted_path.suffix == ".tar":
                 untar_directory(decrypted_path, decrypted_path.parent, shred)
         progress.stop()
         success("File(s) decrypted successfully")
