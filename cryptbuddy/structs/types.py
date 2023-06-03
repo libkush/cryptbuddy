@@ -108,7 +108,6 @@ class SymmetricDecryptOptions(DecryptOptions):
         ### Parameters
         - `password` (`str`): The password to be used for decryption.
         """
-
         super().__init__(*args, **kwargs)
         self.type = "symmetric"
         self.password = password

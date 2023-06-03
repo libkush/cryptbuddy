@@ -237,7 +237,6 @@ def encrypt(
     Encrypt file(s) or folder(s) using a password or public keys of one or more
     users from your keychain
     """
-
     if symmetric and password is None:
         password = typer.prompt(
             "Password to encrypt the file", hide_input=True, confirmation_prompt=True
@@ -365,7 +364,6 @@ def decrypt(
     Decrypt file(s) or folder(s) symmetrically using a password or
     asymmetrically using your private key
     """
-
     progress = Progress(
         SpinnerColumn(),
         TextColumn("{task.description}[progress.description]"),
@@ -427,7 +425,6 @@ def shred_path(
     ],
 ):
     """Shred file(s) or folder(s)"""
-
     for path in paths:
         shred(path)
 

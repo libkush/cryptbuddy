@@ -39,7 +39,6 @@ def decrypt(private_key: PrivateKey, encrypted: bytes) -> bytes:
     ### Raises
     - `DecryptionError`: If an error occurs during decryption.
     """
-
     try:
         sealed_box = SealedBox(private_key)
         decrypted = sealed_box.decrypt(encrypted)

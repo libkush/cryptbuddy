@@ -22,7 +22,6 @@ def initialize(name: str, email: str, password: str, progress: Progress | None =
     ### Raises
     - `FileExistsError`: If the key-pair already exists.
     """
-
     info("Key-pair will be stored at: ", DATA_DIR)
 
     task_id = progress.add_task("Initializing CryptBuddy", 3)
