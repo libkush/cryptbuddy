@@ -168,7 +168,10 @@ def encrypt(
         typer.Option(
             "--password",
             "-p",
-            help="Password to encrypt the file symmetrically. If not provided, you will be prompted to enter the password",
+            help="""
+            Password to encrypt the file symmetrically. If not provided, 
+            you will be prompted to enter the password
+            """,
         ),
     ] = None,
     output: Annotated[
@@ -229,7 +232,7 @@ def encrypt(
         typer.Option(
             "--shred/--no-shred",
             "-d",
-            help="Whether to shred (permanently delete) the original file after encryption",
+            help="Whether to shred the original file after encryption",
         ),
     ] = SHRED,
 ):
@@ -330,7 +333,10 @@ def decrypt(
             "-p",
             prompt=True,
             hide_input=True,
-            help="Password to decrypt the file if encrypted symmetrically, or to decrypt your private key if encrypted asymmetrically",
+            help="""
+            Password to decrypt the file if encrypted symmetrically, 
+            or to decrypt your private key if encrypted asymmetrically
+            """,
         ),
     ],
     symmetric: Annotated[
@@ -344,7 +350,7 @@ def decrypt(
         typer.Option(
             "--shred/--no-shred",
             "-d",
-            help="Whether to shred (permanently delete) the original file after decryption",
+            help="Whether to shred the original file after decryption",
         ),
     ] = SHRED,
     output: Annotated[

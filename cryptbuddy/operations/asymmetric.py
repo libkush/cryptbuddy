@@ -28,7 +28,7 @@ def asymmetric_encrypt(
     - `progress` (`Progress`, optional): A rich progress instance.
     """
     if not path.exists():
-        raise FileNotFoundError(f"Path {path} does not exist")
+        raise FileNotFoundError(f"{path} does not exist")
 
     encrypted_symkeys = {}
     to_shred = options.shred
@@ -112,7 +112,7 @@ def asymmetric_decrypt(
     - `progress` (`Progress`, optional): A rich progress instance.
     """
     if not path.exists():
-        raise FileNotFoundError(f"Path {path} does not exist")
+        raise FileNotFoundError(f"{path} does not exist")
 
     # read the file data
     encrypted_data = path.read_bytes()
@@ -128,14 +128,14 @@ def asymmetric_decrypt(
         meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
     except ValueError as e:
         err = ValueError(
-            f"File {path} is corrupt, or a different delimiter was used during encryption"
+            f"{path} is corrupt, or a different delimiter was used during encryption"
         )
         err.__cause__ = e
         return error(err, progress, task)
 
     if not meta["type"] == "asymmetric":
         return error(
-            ValueError(f"File {path} is not asymmetrically encrypted"), progress, task
+            ValueError(f"{path} is not asymmetrically encrypted"), progress, task
         )
 
     encrypted_symkeys: dict[str, bytes] = meta["encrypted_symkeys"]
@@ -144,7 +144,7 @@ def asymmetric_decrypt(
     chunksize = meta["chunksize"]
 
     if not (encrypted_symkeys and nonce and macsize and chunksize):
-        return error(ValueError(f"File {path} is corrupt"), progress, task)
+        return error(ValueError(f"{path} is corrupt"), progress, task)
 
     try:
         private_key = options.private_key.decrypted_key(options.password)
@@ -155,7 +155,7 @@ def asymmetric_decrypt(
 
     mykey = encrypted_symkeys[options.user]
     if not mykey:
-        err = ValueError(f"File {path} was not encrypted for {options.user}")
+        err = ValueError(f"{path} was not encrypted for {options.user}")
         return error(err, progress, task)
 
     # decrypt symkey
