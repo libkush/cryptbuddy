@@ -24,6 +24,12 @@ error_logger.addHandler(error_handler)
 
 
 def print_keys(records: List[Tuple[int, str]]):
+    """
+    Prints a list of keys to the console.
+
+    ### Parameters
+    - `records` (`List[Tuple[int, str]]`): A list of key records.
+    """
     table = Table(show_header=True, header_style="bold magenta")
 
     table.add_column("ID")
@@ -35,12 +41,26 @@ def print_keys(records: List[Tuple[int, str]]):
 
 
 def info(*msgs: object):
+    """
+    Prints info messages to the console.
+
+    ### Parameters
+    - `*msgs` (`object`): The messages to be printed.
+    """
     message = " ".join(str(msg) for msg in msgs)
     text = Text(message, style="bold blue")
     console.print(text)
 
 
 def error(e: Exception, progress: Progress = None, task: TaskID = None):
+    """
+    Prints error messages to the console and logs them.
+
+    ### Parameters
+    - `e` (`Exception`): The exception to be printed.
+    - `progress` (`Progress`, optional): A rich progress instance.
+    - `task` (`TaskID`, optional): The task to be updated.
+    """
     error_logger.exception(e, exc_info=True)
     message = str(e)
     text = Text(message, style="bold red")
@@ -54,6 +74,13 @@ def error(e: Exception, progress: Progress = None, task: TaskID = None):
 
 
 def success(*msgs: object):
+    """
+    Prints success messages to the console.
+
+    ### Parameters
+    - `*msgs` (`object`): The messages to be printed.
+    """
+
     message = " ".join(str(msg) for msg in msgs)
     text = Text(message, style="bold green")
     console.print(text)

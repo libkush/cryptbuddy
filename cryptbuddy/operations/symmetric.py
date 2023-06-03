@@ -16,7 +16,7 @@ def symmetric_encrypt(
     options: SymmetricEncryptOptions,
     output: Path,
     progress: Progress = None,
-):
+) -> None:
     """
     Encrypts the given file or folder symmetrically.
 
@@ -72,7 +72,8 @@ def symmetric_encrypt(
     except EncryptionError as e:
         err = EncryptionError(f"Failed to encrypt file data for {path.name}")
         err.__cause__ = e
-        return error(err, progress, task)
+        error(err, progress, task)
+        return None
 
     # add metadata
     encrypted_data = add_meta(
@@ -93,7 +94,7 @@ def symmetric_decrypt(
     options: SymmetricDecryptOptions,
     output: Path,
     progress: Progress = None,
-):
+) -> None:
     """
     Decrypts the given file or folder symmetrically.
 
@@ -107,7 +108,7 @@ def symmetric_decrypt(
     - `ValueError`: If the file is not encrypted symmetrically.
     """
     if not path.exists():
-        raise FileNotFoundError("File or folder does not exist")
+        raise FileNotFoundError(f"{path} does not exist")
 
     # read the file data
     encrypted_data = path.read_bytes()
@@ -123,14 +124,16 @@ def symmetric_decrypt(
         meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
     except ValueError as e:
         err = ValueError(
-            f"File {path} is corrupt, or a different delimiter was used during encryption"
+            f"{path} is corrupt, or a different delimiter was used during encryption"
         )
         err.__cause__ = e
-        return error(err, progress, task)
+        error(err, progress, task)
+        return None
 
     if meta["type"] != "symmetric":
-        err = ValueError(f"File {path} is not symmetrically encrypted")
-        return error(err, progress, task)
+        err = ValueError(f"{path} is not symmetrically encrypted")
+        error(err, progress, task)
+        return None
 
     ops = meta["ops"]
     mem = meta["mem"]
@@ -141,7 +144,8 @@ def symmetric_decrypt(
     keysize = meta["keysize"]
 
     if not (ops and mem and salt and nonce and chunksize and macsize and keysize):
-        return error(ValueError(f"File {path} is corrupt"), progress, task)
+        error(ValueError(f"{path} is corrupt"), progress, task)
+        return None
 
     key = options.get_key(salt, mem, ops, keysize)
 
@@ -159,9 +163,11 @@ def symmetric_decrypt(
     except DecryptionError as e:
         err = DecryptionError(f"Failed to decrypt file data for {path.name}")
         err.__cause__ = e
-        return error(err, progress, task)
+        error(err, progress, task)
+        return None
 
     if options.shred:
         shred(path)
 
     write_chunks(decrypted_data, output)
+    return None

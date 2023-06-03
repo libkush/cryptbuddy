@@ -12,7 +12,18 @@ from rich.style import Style
 from typing_extensions import Annotated
 
 import cryptbuddy.commands.keychain as chain
-from cryptbuddy.config import *
+from cryptbuddy.config import (
+    CHUNKSIZE,
+    CONFIG_DIR,
+    DATA_DIR,
+    KEYSIZE,
+    MACSIZE,
+    MEM,
+    NONCESIZE,
+    OPS,
+    SALTBYTES,
+    SHRED,
+)
 from cryptbuddy.functions.file_io import (
     get_decrypted_outfile,
     get_encrypted_outfile,
@@ -47,6 +58,7 @@ app.add_typer(chain.app, name="keychain", help="Manage your keychain")
 
 
 def version_callback(value: bool):
+    """Callback for the --version option"""
     if value:
         print(f"CryptBuddy Version: {__version__}")
         raise typer.Exit()
@@ -57,6 +69,7 @@ def common(
     ctx: typer.Context,
     version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
 ):
+    """A CLI tool for encryption and decryption"""
     pass
 
 
@@ -168,7 +181,10 @@ def encrypt(
         typer.Option(
             "--password",
             "-p",
-            help="Password to encrypt the file symmetrically. If not provided, you will be prompted to enter the password",
+            help="""
+            Password to encrypt the file symmetrically. If not provided, 
+            you will be prompted to enter the password
+            """,
         ),
     ] = None,
     output: Annotated[
@@ -229,7 +245,7 @@ def encrypt(
         typer.Option(
             "--shred/--no-shred",
             "-d",
-            help="Whether to shred (permanently delete) the original file after encryption",
+            help="Whether to shred the original file after encryption",
         ),
     ] = SHRED,
 ):
@@ -274,7 +290,8 @@ def encrypt(
             except Exception:
                 continue
         progress.stop()
-        return success("File(s) encrypted successfully")
+        success("File(s) encrypted successfully")
+        return None
 
     if not symmetric and user:
         keychain = Keychain()
@@ -284,7 +301,8 @@ def encrypt(
             try:
                 public_keys.append(keychain.get_key(u))
             except Exception as e:
-                return error(e)
+                error(e)
+                return None
         options = AsymmetricEncryptOptions(
             symkey=symkey,
             public_keys=public_keys,
@@ -305,9 +323,11 @@ def encrypt(
             except Exception:
                 continue
         progress.stop()
-        return success("File(s) encrypted successfully")
+        success("File(s) encrypted successfully")
+        return None
 
     error("Please specify either symmetric (with password) or users for encryption")
+    return None
 
 
 @app.command()
@@ -329,7 +349,10 @@ def decrypt(
             "-p",
             prompt=True,
             hide_input=True,
-            help="Password to decrypt the file if encrypted symmetrically, or to decrypt your private key if encrypted asymmetrically",
+            help="""
+            Password to decrypt the file if encrypted symmetrically, 
+            or to decrypt your private key if encrypted asymmetrically
+            """,
         ),
     ],
     symmetric: Annotated[
@@ -343,7 +366,7 @@ def decrypt(
         typer.Option(
             "--shred/--no-shred",
             "-d",
-            help="Whether to shred (permanently delete) the original file after decryption",
+            help="Whether to shred the original file after decryption",
         ),
     ] = SHRED,
     output: Annotated[
