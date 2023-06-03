@@ -62,6 +62,7 @@ def version_callback(value: bool):
 
 
 @app.callback()
+# skipcq: PYL-W0613
 def common(
     ctx: typer.Context,
     version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
