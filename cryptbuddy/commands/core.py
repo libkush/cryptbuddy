@@ -20,6 +20,7 @@ from cryptbuddy.functions.file_io import (
     untar_directory,
 )
 from cryptbuddy.operations.asymmetric import asymmetric_decrypt, asymmetric_encrypt
+from cryptbuddy.operations.clean import clean
 from cryptbuddy.operations.initialize import initialize
 from cryptbuddy.operations.logging import error, success
 from cryptbuddy.operations.symmetric import symmetric_decrypt, symmetric_encrypt
@@ -74,6 +75,15 @@ def init(
             help="Password to encrypt your private key",
         ),
     ],
+    clean_dirs: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--clean",
+            "-c",
+            is_flag=True,
+            help="Clean existing data before initializing",
+        ),
+    ] = False,
 ):
     """
     Initialize cryptbuddy by generating a key-pair and creating the
@@ -82,8 +92,11 @@ def init(
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[bold blue]{task.description}"),
-        transient=True,
+        transient=False,
     )
+
+    if clean_dirs:
+        clean()
 
     stats = PasswordStats(password).strength()
     if stats < 0.3:
@@ -94,7 +107,7 @@ def init(
         initialize(name, email, password, progress)
     except Exception as e:
         error(e)
-    success("Cryptbuddy initialized")
+    progress.stop()
 
 
 @app.command()

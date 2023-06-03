@@ -7,12 +7,12 @@ from rich.progress import Progress, TaskID
 from rich.table import Table
 from rich.text import Text
 
-from cryptbuddy.config import DATA_DIR
+from cryptbuddy.config import CACHE_DIR
 
 console = Console()
 
 error_handler = RotatingFileHandler(
-    DATA_DIR / "errors.log", maxBytes=1024, backupCount=5
+    CACHE_DIR / "errors.log", maxBytes=1024, backupCount=5
 )
 error_handler.setLevel(logging.ERROR)
 error_handler.setFormatter(

@@ -37,18 +37,18 @@ def initialize(name: str, email: str, password: str, progress: Progress | None =
 
     private_key_obj = PrivateKey.generate()
     public_key_obj = private_key_obj.public_key
-    progress.update(task_id, "Key-pair generated\n")
+    progress.update(task_id, description="Key-pair generated\n")
 
     private_key = AppPrivateKey(private_key_obj, password, name=name, email=email)
     public_key = AppPublicKey(public_key_obj, name=name, email=email)
     private_key.save(private_key_file)
     public_key.save(public_key_file)
-    progress.update(task_id, "Key-pair saved\n")
+    progress.update(task_id, description="Key-pair saved\n")
 
     keychain = Keychain()
     keychain.add_key(public_key)
     keychain.close()
-    progress.update(task_id, "Keychain created\n")
+    progress.update(task_id, description="Keychain created\n")
 
     progress.stop()
 
