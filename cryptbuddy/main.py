@@ -1,6 +1,5 @@
 from cryptbuddy.commands.core import app
 
-
 # TODO: Add a command to edit details of the user
 
 # TODO: Add a command to clean up everything
