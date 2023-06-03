@@ -43,9 +43,7 @@ class KeyMeta:
 
 
 class BaseKey:
-    """
-    Base class for keys.
-    """
+    """Base class for keys."""
 
     def __init__(self, name: str, email: str):
         self.meta = KeyMeta(name, email)
