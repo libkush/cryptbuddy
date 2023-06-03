@@ -15,9 +15,9 @@ from cryptbuddy.constants import (
     OPS,
     SALTBYTES,
 )
-from cryptbuddy.exceptions import DecryptionError, EncryptionError
+from cryptbuddy.exceptions import DecryptionError
 from cryptbuddy.functions.file_data import add_meta, divide_in_chunks, parse_data
-from cryptbuddy.functions.file_io import shred, write_bytes, write_chunks
+from cryptbuddy.functions.file_io import write_bytes, write_chunks
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 
 
