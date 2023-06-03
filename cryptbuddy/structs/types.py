@@ -5,7 +5,7 @@ from nacl.pwhash.argon2i import kdf
 from cryptbuddy.structs.app_keys import AppPrivateKey, AppPublicKey
 
 
-class EncryptOptions(object):
+class EncryptOptions:
     """
     Options for encryption.
 
@@ -45,7 +45,7 @@ class EncryptOptions(object):
         self.shred = shred
 
 
-class DecryptOptions(object):
+class DecryptOptions:
     """
     Options for decryption.
 
