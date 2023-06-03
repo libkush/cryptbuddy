@@ -70,7 +70,6 @@ def common(
     version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
 ):
     """A CLI tool for encryption and decryption"""
-    pass
 
 
 @app.command()
