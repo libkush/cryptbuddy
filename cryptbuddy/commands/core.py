@@ -181,7 +181,7 @@ def encrypt(
             "--password",
             "-p",
             help="""
-            Password to encrypt the file symmetrically. If not provided, 
+            Password to encrypt the file symmetrically. If not provided,
             you will be prompted to enter the password
             """,
         ),
@@ -349,7 +349,7 @@ def decrypt(
             prompt=True,
             hide_input=True,
             help="""
-            Password to decrypt the file if encrypted symmetrically, 
+            Password to decrypt the file if encrypted symmetrically,
             or to decrypt your private key if encrypted asymmetrically
             """,
         ),
