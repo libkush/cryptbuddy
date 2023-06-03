@@ -4,7 +4,7 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
-from cryptbuddy.operations.logging import error, print_keys, success
+from cryptbuddy.operations.logger import error, print_keys, success
 from cryptbuddy.structs.app_keys import AppPublicKey
 from cryptbuddy.structs.keychain import Keychain
 

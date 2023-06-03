@@ -33,7 +33,7 @@ from cryptbuddy.functions.file_io import (
 from cryptbuddy.operations.asymmetric import asymmetric_decrypt, asymmetric_encrypt
 from cryptbuddy.operations.clean import clean
 from cryptbuddy.operations.initialize import initialize
-from cryptbuddy.operations.logging import error, success
+from cryptbuddy.operations.logger import error, success
 from cryptbuddy.operations.symmetric import symmetric_decrypt, symmetric_encrypt
 from cryptbuddy.structs.app_keys import AppPrivateKey
 from cryptbuddy.structs.keychain import Keychain

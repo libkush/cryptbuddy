@@ -4,7 +4,7 @@ from nacl.public import PrivateKey
 from rich.progress import Progress
 
 from cryptbuddy.config import DATA_DIR
-from cryptbuddy.operations.logging import info, success
+from cryptbuddy.operations.logger import info, success
 from cryptbuddy.structs.app_keys import AppPrivateKey, AppPublicKey
 from cryptbuddy.structs.keychain import Keychain
 

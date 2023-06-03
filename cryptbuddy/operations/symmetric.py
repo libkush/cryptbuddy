@@ -7,7 +7,7 @@ from cryptbuddy.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.functions.file_data import add_meta, parse_data
 from cryptbuddy.functions.file_io import shred, tar_directory, write_chunks
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
-from cryptbuddy.operations.logging import error
+from cryptbuddy.operations.logger import error
 from cryptbuddy.structs.types import SymmetricDecryptOptions, SymmetricEncryptOptions
 
 
