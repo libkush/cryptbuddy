@@ -38,10 +38,7 @@ def asymmetric_encrypt(
         try:
             encrypted_symkey = encrypt(public_key, options.symkey)
         except EncryptionError as e:
-            err = EncryptionError(f"Failed to encrypt symmetric key for {name}")
-            err.__cause__ = e
-            error(err, progress, task)
-            return None
+            raise EncryptionError(f"Failed to encrypt symmetric key for {name}") from e
         encrypted_symkeys[name] = encrypted_symkey
 
     meta = {
