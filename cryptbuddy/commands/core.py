@@ -24,12 +24,9 @@ from cryptbuddy.config import (
     SALTBYTES,
     SHRED,
 )
-from cryptbuddy.functions.file_io import (
-    get_decrypted_outfile,
-    get_encrypted_outfile,
-    shred,
-    untar_directory,
-)
+from cryptbuddy.functions.file_io import get_decrypted_outfile, get_encrypted_outfile
+from cryptbuddy.functions.file_io import shred as shred_file
+from cryptbuddy.functions.file_io import untar_directory
 from cryptbuddy.operations.asymmetric import asymmetric_decrypt, asymmetric_encrypt
 from cryptbuddy.operations.clean import clean
 from cryptbuddy.operations.initialize import initialize
@@ -448,6 +445,6 @@ def shred_path(
 ):
     """Shred file(s) or folder(s)"""
     for path in paths:
-        shred(path)
+        shred_file(path)
 
     success("File(s) shredded successfully")
