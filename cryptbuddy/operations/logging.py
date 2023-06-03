@@ -80,7 +80,6 @@ def success(*msgs: object):
     ### Parameters
     - `*msgs` (`object`): The messages to be printed.
     """
-
     message = " ".join(str(msg) for msg in msgs)
     text = Text(message, style="bold green")
     console.print(text)
