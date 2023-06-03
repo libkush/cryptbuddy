@@ -62,9 +62,10 @@ def version_callback(value: bool):
 
 
 @app.callback()
-# skipcq: PYL-W0613
 def common(
+    # skipcq: PYL-W0613
     ctx: typer.Context,
+    # skipcq: PYL-W0613
     version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
 ):
     """A CLI tool for encryption and decryption"""
