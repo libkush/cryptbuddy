@@ -87,6 +87,7 @@ def symmetric_encrypt(
         shred(path)
 
     write_chunks(encrypted_data, output)
+    return None
 
 
 def symmetric_decrypt(
