@@ -48,7 +48,8 @@ def encrypt_data(
         out.append(outchunk)
         nonce = sodium_increment(nonce)
         data = data[chunksize:]
-        progress.update(task, advance=chunksize) if progress else None
+        if progress:
+            progress.update(task, advance=chunksize)
 
     return out
 
@@ -93,5 +94,6 @@ def decrypt_data(
         out.append(dchunk)
         nonce = sodium_increment(nonce)
         data = data[chunksize + macsize :]
-        progress.update(task, advance=chunksize) if progress else None
+        if progress:
+            progress.update(task, advance=chunksize)
     return out

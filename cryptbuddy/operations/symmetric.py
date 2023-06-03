@@ -47,7 +47,8 @@ def symmetric_encrypt(
     if path.is_dir():
         original = path
         path = tar_directory(path)
-        shred(original) if options.shred else None
+        if options.shred:
+            shred(original)
         to_shred = True
 
     file_data = path.read_bytes()
