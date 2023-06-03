@@ -278,7 +278,8 @@ def encrypt(
             except Exception:
                 continue
         progress.stop()
-        return success("File(s) encrypted successfully")
+        success("File(s) encrypted successfully")
+        return None
 
     if not symmetric and user:
         keychain = Keychain()
@@ -288,7 +289,8 @@ def encrypt(
             try:
                 public_keys.append(keychain.get_key(u))
             except Exception as e:
-                return error(e)
+                error(e)
+                return None
         options = AsymmetricEncryptOptions(
             symkey=symkey,
             public_keys=public_keys,
@@ -309,9 +311,11 @@ def encrypt(
             except Exception:
                 continue
         progress.stop()
-        return success("File(s) encrypted successfully")
+        success("File(s) encrypted successfully")
+        return None
 
     error("Please specify either symmetric (with password) or users for encryption")
+    return None
 
 
 @app.command()
