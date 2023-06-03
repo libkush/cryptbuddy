@@ -12,7 +12,18 @@ from rich.style import Style
 from typing_extensions import Annotated
 
 import cryptbuddy.commands.keychain as chain
-from cryptbuddy.config import *
+from cryptbuddy.config import (
+    CHUNKSIZE,
+    CONFIG_DIR,
+    DATA_DIR,
+    KEYSIZE,
+    MACSIZE,
+    MEM,
+    NONCESIZE,
+    OPS,
+    SALTBYTES,
+    SHRED,
+)
 from cryptbuddy.functions.file_io import (
     get_decrypted_outfile,
     get_encrypted_outfile,
