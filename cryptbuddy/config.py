@@ -2,7 +2,14 @@ from pathlib import Path
 
 from ormsgpack import unpackb
 
-from cryptbuddy.constants import CONFIG_FILE, DEFAULT_CONFIG
+from cryptbuddy.constants import (
+    CONFIG_FILE,
+    DEFAULT_CONFIG,
+    KEYSIZE,
+    MACSIZE,
+    NONCESIZE,
+    SALTBYTES,
+)
 
 config_data = CONFIG_FILE.read_bytes() if CONFIG_FILE.exists() else None
 if not config_data:
@@ -10,13 +17,14 @@ if not config_data:
 else:
     CONFIG = unpackb(config_data)
 
+KEYSIZE: int = KEYSIZE
+SALTBYTES: int = SALTBYTES
+NONCESIZE: int = NONCESIZE
+MACSIZE: int = MACSIZE
+
 CHUNKSIZE: int = CONFIG["chunksize"]
-MACSIZE: int = CONFIG["macsize"]
 OPS = CONFIG["ops"]
 MEM = CONFIG["mem"]
-KEYSIZE: int = CONFIG["keysize"]
-SALTBYTES: int = CONFIG["saltbytes"]
-NONCESIZE: int = CONFIG["noncesize"]
 DELIMITER: bytes = CONFIG["delimiter"]
 ESCAPE_SEQUENCE: bytes = CONFIG["escape_sequence"]
 CACHE_DIR: Path = CONFIG["cache_dir"]

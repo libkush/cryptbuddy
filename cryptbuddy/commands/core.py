@@ -1,4 +1,5 @@
 import base64
+import multiprocessing as mp
 from pathlib import Path
 from shutil import copyfile
 from typing import List, Optional
@@ -48,8 +49,8 @@ app = typer.Typer(
     name="CryptBuddy",
     help="A CLI tool for encryption and decryption",
     add_completion=True,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
+    no_args_is_help=True,  # show help when no arguments are provided
+    context_settings={"help_option_names": ["-h", "--help"]},  # add -h and --help
 )
 app.add_typer(chain.app, name="keychain", help="Manage your keychain")
 
@@ -122,33 +123,6 @@ def init(
 
 
 @app.command()
-def export(
-    directory: Annotated[
-        Path,
-        typer.Argument(
-            help="Directory to export the public key to",
-            exists=True,
-            writable=True,
-            resolve_path=True,
-            dir_okay=True,
-            file_okay=False,
-        ),
-    ]
-):
-    """Export your public key file to specified directory to share with others"""
-    public_key_path = Path(f"{CONFIG_DIR}/public.key")
-    if not public_key_path.exists():
-        error("Public key not found")
-
-    try:
-        copyfile(public_key_path, Path(f"{directory}/public.key"))
-    except Exception as e:
-        error(e)
-
-    success("File exported successfully")
-
-
-@app.command()
 def encrypt(
     paths: Annotated[
         List[Path],
@@ -203,7 +177,7 @@ def encrypt(
         typer.Option(
             "--nonce",
             "-n",
-            help="Base64 encoded nonce value used to encrypt the file",
+            help=f"{NONCESIZE}-bit Base64 encoded nonce",
         ),
     ] = base64.b64encode(random(NONCESIZE)).decode("utf-8"),
     salt: Annotated[
@@ -211,25 +185,9 @@ def encrypt(
         typer.Option(
             "--salt",
             "-l",
-            help="Base64 encoded salt to encrypt the file",
+            help=f"{SALTBYTES}-bit Base64 encoded salt",
         ),
     ] = base64.b64encode(random(SALTBYTES)).decode("utf-8"),
-    keysize: Annotated[
-        int,
-        typer.Option(
-            "--keysize",
-            "-k",
-            help="Key size for the generated symmetric keys",
-        ),
-    ] = KEYSIZE,
-    macsize: Annotated[
-        int,
-        typer.Option(
-            "--macsize",
-            "-m",
-            help="MAC size to encrypt the file",
-        ),
-    ] = MACSIZE,
     chunksize: Annotated[
         int,
         typer.Option(
@@ -251,11 +209,16 @@ def encrypt(
     Encrypt file(s) or folder(s) using a password or public keys of one or more
     users from your keychain
     """
+    # symmetric encryption requires a password to generate a key
+    # asymmetric encryption does not require a password,
+    # but public keys of the recipents
     if symmetric and password is None:
         password = typer.prompt(
             "Password to encrypt the file", hide_input=True, confirmation_prompt=True
         )
 
+    # we cannot pass arguments in the form of bytes, hence we use
+    # base64 encoded strings
     bnonce = base64.b64decode(nonce)
     bsalt = base64.b64decode(salt)
 
@@ -272,55 +235,70 @@ def encrypt(
         options = SymmetricEncryptOptions(
             mem=MEM,
             ops=OPS,
+            macsize=MACSIZE,
+            keysize=KEYSIZE,
             password=password,
             nonce=bnonce,
             salt=bsalt,
-            keysize=keysize,
-            macsize=macsize,
             chunksize=chunksize,
             shred=shred,
         )
+
         progress.start()
         for path in paths:
-            encrypted_path = get_encrypted_outfile(path, output)
+            encrypted_path = get_encrypted_outfile(path, output)  # output file
             try:
                 symmetric_encrypt(path, options, encrypted_path, progress)
             except Exception:
                 continue
         progress.stop()
+
         success("File(s) encrypted successfully")
         return None
 
     if not symmetric and user:
+        # for asymmetric encryption, we first generate a symmetric key
+        # and encrypt it with the public keys of each of the recipents
+        # the file is then encrypted symmetrically using the symmetric key
+        # and the encrypted symmetric key is prepended to the file in
+        # the form of a header (metadata)
+
+        # public keys -> asymmetrically encrypt symmetric key
+        # symmetric key -> symmetrically encrypts file data
+
+        symkey = random(KEYSIZE)  # this is the symmetric key
+
         keychain = Keychain()
         public_keys = []
-        symkey = random(keysize)
         for u in user:
             try:
                 public_keys.append(keychain.get_key(u))
             except Exception as e:
                 error(e)
                 return None
+
         options = AsymmetricEncryptOptions(
+            keysize=KEYSIZE,
+            macsize=MACSIZE,
+            mem=MEM,
+            ops=OPS,
             symkey=symkey,
             public_keys=public_keys,
             nonce=bnonce,
             salt=bsalt,
-            keysize=keysize,
-            macsize=macsize,
             chunksize=chunksize,
             shred=shred,
-            mem=MEM,
-            ops=OPS,
         )
+
         progress.start()
         for path in paths:
-            encrypted_path = get_encrypted_outfile(path, output)
+            encrypted_path = get_encrypted_outfile(path, output)  # output file
             try:
                 asymmetric_encrypt(path, options, encrypted_path, progress)
             except Exception:
                 continue
         progress.stop()
+
         success("File(s) encrypted successfully")
         return None
 
@@ -394,11 +372,13 @@ def decrypt(
         ),
     )
 
+    # password is required to generate the key in symmetric decryption
     if symmetric and password:
         options = SymmetricDecryptOptions(
             password=password,
             shred=shred,
         )
+
         progress.start()
         for path in paths:
             decrypted_path = get_decrypted_outfile(path, output)
@@ -409,16 +389,23 @@ def decrypt(
             if decrypted_path.exists() and decrypted_path.suffix == ".tar":
                 untar_directory(decrypted_path, decrypted_path.parent, shred)
         progress.stop()
+
         success("File(s) decrypted successfully")
 
+    # for asymmetric decryption, we need the private key
+    # the private key is always encrypted with a password
+    # so we need the password to decrypt the private key
     elif not symmetric and password:
+        # usable private key
         private_key = AppPrivateKey.from_file(Path(f"{DATA_DIR}/private.key"), password)
+
         options = AsymmetricDecryptOptions(
             user=private_key.meta.name,
             password=password,
             private_key=private_key,
             shred=shred,
         )
+
         progress.start()
         for path in paths:
             decrypted_path = get_decrypted_outfile(path, output)
@@ -429,6 +416,7 @@ def decrypt(
             if decrypted_path.exists() and decrypted_path.suffix == ".tar":
                 untar_directory(decrypted_path, decrypted_path.parent, shred)
         progress.stop()
+
         success("File(s) decrypted successfully")
 
 
@@ -446,7 +434,36 @@ def shred_path(
     ],
 ):
     """Shred file(s) or folder(s)"""
+    # shredding works by overwriting the file with random data
+    # and then deleting it. this way, the file is unrecoverable
     for path in paths:
         shred_file(path)
 
     success("File(s) shredded successfully")
+
+
+@app.command()
+def export(
+    directory: Annotated[
+        Path,
+        typer.Argument(
+            help="Directory to export the public key to",
+            exists=True,
+            writable=True,
+            resolve_path=True,
+            dir_okay=True,
+            file_okay=False,
+        ),
+    ]
+):
+    """Export your public key file to specified directory to share with others"""
+    public_key_path = Path(f"{CONFIG_DIR}/public.key")
+    if not public_key_path.exists():
+        error("Public key not found")
+
+    try:
+        copyfile(public_key_path, Path(f"{directory}/public.key"))
+    except Exception as e:
+        error(e)
+
+    success("File exported successfully")

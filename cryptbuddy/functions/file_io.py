@@ -57,7 +57,6 @@ def shred(path: Path) -> None:
     ### Raises
     - `FileNotFoundError`: If the file or folder does not exist.
     """
-    # Check if the path exists
     if not path.exists():
         raise FileNotFoundError("File does not exist")
 
@@ -66,13 +65,13 @@ def shred(path: Path) -> None:
         paths = list(path.glob("**/*"))
 
     for file in paths:
-        # Overwrite the file with random data
+        # overwrite the file with random data
         size = file.stat().st_size
         random_bits = choices(range(256), k=size)
         with open(file, "wb") as f:
             f.write(bytes(random_bits))
 
-        # Delete the file
+        # delete the file
         file.unlink()
 
 
@@ -89,7 +88,7 @@ def tar_directory(path: Path) -> Path:
     if not path.is_dir():
         raise ValueError("Path is not a directory")
 
-    # Create a tar archive of the directory
+    # create a tar archive of the directory
     with tarfile.open(path.with_suffix(".tar"), "w") as tar:
         tar.add(path, arcname=path.name)
 
@@ -111,7 +110,7 @@ def untar_directory(path: Path, output: Path, shred_file: bool) -> Path:
     if not path.is_file() or path.suffix != ".tar":
         raise ValueError("Path is not a tar archive")
 
-    # Extract the tar archive to the output directory
+    # extract the tar archive to the output directory
     with tarfile.open(path, "r") as tar:
         tar.extractall(output)
 
@@ -132,6 +131,8 @@ def get_encrypted_outfile(path: Path, output: Path = None):
     ### Returns
     - `Path`: The path to the encrypted file.
     """
+    # if the file is a directory, add .tar.crypt to the end
+    # otherwise, add .crypt to the end
     output_dir = output if output else path.parent
     encrypted_name = path.with_suffix(path.suffix + ".crypt").name
     if path.is_dir():
@@ -153,6 +154,7 @@ def get_decrypted_outfile(path: Path, output: Path = None):
     ### Raises
     - `ValueError`: If the path is a directory.
     """
+    # if the path ends with .crypt, remove it, otherwise add .dec
     if path.is_dir():
         raise ValueError("Cannot get path for a decrypted directory")
     output_dir = output if output else path.parent
