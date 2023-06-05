@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 from nacl.bindings import sodium_increment
@@ -5,6 +6,35 @@ from nacl.secret import SecretBox
 from rich.progress import Progress, TaskID
 
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
+
+
+def encrypt_chunk(
+    index: int, chunk: bytes, box: SecretBox, nonce: bytes, macsize: int
+) -> bytes:
+    """
+    Encrypts the given chunk using the provided key and nonce.
+
+    ### Parameters
+    - `chunk` (`bytes`): The chunk to be encrypted.
+    - `key` (`bytes`): The encryption key.
+    - `nonce` (`bytes`): The nonce to be used for encryption.
+
+    ### Returns
+    `bytes`: The encrypted chunk.
+
+    ### Raises
+    - `EncryptionError`: If an error occurs during encryption.
+
+    """
+    try:
+        outchunk = box.encrypt(chunk, nonce).ciphertext
+    except Exception as e:
+        err = EncryptionError("Error encrypting chunk")
+        err.__cause__ = e
+        return index, err
+    if not len(outchunk) == len(chunk) + macsize:
+        return index, EncryptionError("Error encrypting chunk")
+    return index, outchunk
 
 
 def encrypt_data(
@@ -34,24 +64,58 @@ def encrypt_data(
 
     """
     box = SecretBox(key)
-    out = []
+    chunks = [data[i : i + chunksize] for i in range(0, len(data), chunksize)]
+    out = [None] * len(chunks)
 
-    while 1:
-        chunk = data[:chunksize]
-        if len(chunk) == 0:
-            break
-        try:
-            outchunk = box.encrypt(chunk, nonce).ciphertext
-        except Exception as e:
-            raise EncryptionError("Error encrypting chunk") from e
-        assert len(outchunk) == len(chunk) + macsize
-        out.append(outchunk)
-        nonce = sodium_increment(nonce)
-        data = data[chunksize:]
-        if progress:
-            progress.update(task, advance=chunksize)
+    with ThreadPoolExecutor() as executor:
+        # Process each chunk concurrently and store the future objects
+        futures = [
+            executor.submit(encrypt_chunk, i, chunk, box, nonce, macsize)
+            for i, chunk in enumerate(chunks)
+        ]
 
+        for future in as_completed(futures):
+            try:
+                i, outchunk = future.result()
+                if isinstance(outchunk, EncryptionError):
+                    raise outchunk
+                out[i] = outchunk
+                nonce = sodium_increment(nonce)
+            except Exception as e:
+                raise e
+            if progress:
+                progress.update(task, advance=chunksize)
     return out
+
+
+def decrypt_chunk(
+    index: int, chunk: bytes, box: SecretBox, nonce: bytes, macsize: int
+) -> bytes:
+    """
+    Decrypts the given chunk using the provided key and nonce.
+
+    ## Parameters
+    - `chunk` (`bytes`): The chunk to be decrypted.
+    - `key` (`bytes`): The decryption key.
+    - `nonce` (`bytes`): The nonce to be used for decryption.
+
+    ## Returns
+    `bytes`: The decrypted chunk.
+
+    ## Raises
+    - `DecryptionError`: If an error occurs during decryption.
+
+    """
+    try:
+        outchunk = box.decrypt(chunk, nonce)
+    except Exception as e:
+        err = DecryptionError("Error decrypting chunk")
+        err.__cause__ = e
+        return index, err
+
+    if not len(outchunk) == len(chunk) - macsize:
+        return index, DecryptionError("Error decrypting chunk")
+    return index, outchunk
 
 
 def decrypt_data(
@@ -81,19 +145,27 @@ def decrypt_data(
 
     """
     box = SecretBox(key)
-    out = []
-    while 1:
-        rchunk = data[: chunksize + macsize]
-        if len(rchunk) == 0:
-            break
+    out = [None] * (len(data) // (chunksize + macsize) + 1)
+    chunks = [
+        data[i : i + chunksize + macsize]
+        for i in range(0, len(data), chunksize + macsize)
+    ]
+    executor = ThreadPoolExecutor()
+    # Process each chunk concurrently and store the future objects
+    futures = [
+        executor.submit(decrypt_chunk, i, chunk, box, nonce, macsize)
+        for i, chunk in enumerate(chunks)
+    ]
+
+    for future in as_completed(futures):
         try:
-            dchunk = box.decrypt(rchunk, nonce)
+            i, outchunk = future.result()
+            if isinstance(outchunk, DecryptionError):
+                raise outchunk
+            out[i] = outchunk
+            nonce = sodium_increment(nonce)
         except Exception as e:
-            raise DecryptionError("Error decrypting chunk") from e
-        assert len(dchunk) == len(rchunk) - macsize
-        out.append(dchunk)
-        nonce = sodium_increment(nonce)
-        data = data[chunksize + macsize :]
+            raise e
         if progress:
-            progress.update(task, advance=chunksize)
+            progress.update(task, advance=chunksize + macsize)
     return out

@@ -70,7 +70,7 @@ def symmetric_encrypt(
             progress,
             task,
         )
-    except EncryptionError as e:
+    except Exception as e:
         err = EncryptionError(f"Failed to encrypt file data for {path.name}")
         err.__cause__ = e
         error(err, progress, task)
@@ -162,7 +162,7 @@ def symmetric_decrypt(
             progress,
             task,
         )
-    except DecryptionError as e:
+    except Exception as e:
         err = DecryptionError(f"Failed to decrypt file data for {path.name}")
         err.__cause__ = e
         error(err, progress, task)

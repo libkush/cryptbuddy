@@ -68,6 +68,7 @@ def error(e: Exception, progress: Progress = None, task: TaskID = None):
         progress.update(
             task,
             description=f"[bold red]Error: {message}",
+            completed=0,
         )
     else:
         console.print(text)
