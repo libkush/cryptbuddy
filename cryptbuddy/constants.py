@@ -18,7 +18,7 @@ if not DATA_DIR.exists():
 if not CONFIG_DIR.exists():
     CONFIG_DIR.mkdir(parents=True)
 
-CHUNKSIZE = 64 * 1024
+CHUNKSIZE = 5 * 1024 * 1024
 MACSIZE = secret.SecretBox.MACBYTES
 OPS = pwhash.argon2i.OPSLIMIT_SENSITIVE
 MEM = pwhash.argon2i.MEMLIMIT_SENSITIVE
