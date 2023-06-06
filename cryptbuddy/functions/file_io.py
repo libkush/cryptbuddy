@@ -1,6 +1,6 @@
 import tarfile
+from os import urandom
 from pathlib import Path
-from random import choices
 from typing import List
 
 
@@ -22,8 +22,7 @@ def write_chunks(chunks: List[bytes], path: Path) -> None:
     if not path.exists():
         path.touch()
     with open(path, "wb") as outfile:
-        for chunk in chunks:
-            outfile.write(chunk)
+        outfile.write(b"".join(chunks))
 
 
 def write_bytes(b: bytes, path: Path) -> None:
@@ -67,7 +66,7 @@ def shred(path: Path) -> None:
     for file in paths:
         # overwrite the file with random data
         size = file.stat().st_size
-        random_bits = choices(range(256), k=size)
+        random_bits = urandom(size)
         with open(file, "wb") as f:
             f.write(bytes(random_bits))
 
