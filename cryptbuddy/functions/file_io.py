@@ -22,7 +22,9 @@ def write_chunks(chunks: List[bytes], path: Path) -> None:
     if not path.exists():
         path.touch()
     with open(path, "wb") as outfile:
-        outfile.write(b"".join(chunks))
+        outfile.write(
+            b"".join(chunks) if chunks[-1] is not None else b"".join(chunks[:-1])
+        )
 
 
 def write_bytes(b: bytes, path: Path) -> None:
