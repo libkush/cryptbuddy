@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rich.progress import Progress
+from rich.progress import TaskID
 
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
@@ -8,14 +8,19 @@ from cryptbuddy.functions.file_data import add_meta, parse_data
 from cryptbuddy.functions.file_io import shred, tar_directory, write_chunks
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
-from cryptbuddy.structs.types import SymmetricDecryptOptions, SymmetricEncryptOptions
+from cryptbuddy.structs.key_types import (
+    SymmetricDecryptOptions,
+    SymmetricEncryptOptions,
+)
+from cryptbuddy.structs.types import ProgressState
 
 
 def symmetric_encrypt(
     path: Path,
     options: SymmetricEncryptOptions,
     output: Path,
-    progress: Progress = None,
+    progress: ProgressState = None,
+    task: TaskID = None,
 ) -> None:
     """
     Encrypts the given file or folder symmetrically.
@@ -53,12 +58,6 @@ def symmetric_encrypt(
 
     file_data = path.read_bytes()
 
-    task = (
-        progress.add_task(f"[cyan]Encrypting: {path.name}", total=len(file_data))
-        if progress
-        else None
-    )
-
     try:
         # encrypt the file data
         encrypted_data = encrypt_data(
@@ -95,7 +94,8 @@ def symmetric_decrypt(
     path: Path,
     options: SymmetricDecryptOptions,
     output: Path,
-    progress: Progress = None,
+    progress: ProgressState = None,
+    task: TaskID = None,
 ) -> None:
     """
     Decrypts the given file or folder symmetrically.
@@ -114,12 +114,6 @@ def symmetric_decrypt(
 
     # read the file data
     encrypted_data = path.read_bytes()
-
-    task = (
-        progress.add_task(f"[cyan]Decrypting: {path.name}", total=len(encrypted_data))
-        if progress
-        else None
-    )
 
     try:
         # get the metadata

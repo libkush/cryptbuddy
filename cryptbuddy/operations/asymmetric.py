@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rich.progress import Progress
+from rich.progress import TaskID
 
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
@@ -9,14 +9,19 @@ from cryptbuddy.functions.file_data import add_meta, parse_data
 from cryptbuddy.functions.file_io import shred, tar_directory, write_chunks
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
-from cryptbuddy.structs.types import AsymmetricDecryptOptions, AsymmetricEncryptOptions
+from cryptbuddy.structs.key_types import (
+    AsymmetricDecryptOptions,
+    AsymmetricEncryptOptions,
+)
+from cryptbuddy.structs.types import ProgressState
 
 
 def asymmetric_encrypt(
     path: Path,
     options: AsymmetricEncryptOptions,
     output: Path,
-    progress: Progress | None = None,
+    progress: ProgressState | None = None,
+    task: TaskID | None = None,
 ) -> None:
     """
     Encrypts the given file or folder asymmetrically.
@@ -59,12 +64,6 @@ def asymmetric_encrypt(
 
     file_data = path.read_bytes()
 
-    task = (
-        progress.add_task(f"[cyan]Encrypting... {path.name}", total=len(file_data))
-        if progress
-        else None
-    )
-
     try:
         # encrypt the file data
         encrypted_data = encrypt_data(
@@ -101,7 +100,8 @@ def asymmetric_decrypt(
     path: Path,
     options: AsymmetricDecryptOptions,
     output: Path,
-    progress: Progress | None = None,
+    progress: ProgressState | None = None,
+    task: TaskID | None = None,
 ) -> None:
     """
     Decrypts the given file or folder asymmetrically.
@@ -117,12 +117,6 @@ def asymmetric_decrypt(
 
     # read the file data
     encrypted_data = path.read_bytes()
-
-    task = (
-        progress.add_task(f"[cyan]Decrypting... {path.name}", total=len(encrypted_data))
-        if progress
-        else None
-    )
 
     # get the metadata
     try:

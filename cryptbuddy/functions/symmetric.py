@@ -6,6 +6,7 @@ from nacl.secret import SecretBox
 from rich.progress import Progress, TaskID
 
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
+from cryptbuddy.structs.types import ProgressState
 
 
 def encrypt_chunk(
@@ -43,7 +44,7 @@ def encrypt_data(
     nonce: bytes,
     chunksize: int,
     macsize: int,
-    progress: Progress | None = None,
+    progress: ProgressState | None = None,
     task: TaskID | None = None,
 ) -> List[bytes]:
     """
@@ -66,6 +67,9 @@ def encrypt_data(
     box = SecretBox(key)
     chunks = [data[i : i + chunksize] for i in range(0, len(data), chunksize)]
     out = [None] * len(chunks)
+    total = len(chunks)
+    if progress:
+        progress.update(task, total=total)
 
     with ThreadPoolExecutor() as executor:
         # Process each chunk concurrently and store the future objects
@@ -84,7 +88,7 @@ def encrypt_data(
             except Exception as e:
                 raise e
             if progress:
-                progress.update(task, advance=chunksize)
+                progress.increment(task)
     return out
 
 
@@ -124,7 +128,7 @@ def decrypt_data(
     key: bytes,
     nonce: bytes,
     macsize: int,
-    progress: Progress | None = None,
+    progress: ProgressState | None = None,
     task: TaskID | None = None,
 ) -> List[bytes]:
     """
@@ -150,8 +154,12 @@ def decrypt_data(
         data[i : i + chunksize + macsize]
         for i in range(0, len(data), chunksize + macsize)
     ]
-    executor = ThreadPoolExecutor()
+    total = len(chunks)
+    if progress:
+        progress.update(task, total=total)
+
     # Process each chunk concurrently and store the future objects
+    executor = ThreadPoolExecutor()
     futures = [
         executor.submit(decrypt_chunk, i, chunk, box, nonce, macsize)
         for i, chunk in enumerate(chunks)
@@ -167,5 +175,5 @@ def decrypt_data(
         except Exception as e:
             raise e
         if progress:
-            progress.update(task, advance=chunksize + macsize)
+            progress.increment(task)
     return out
