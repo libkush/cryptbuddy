@@ -29,6 +29,7 @@ DELIMITER = b"\xFF\xFF\xFF\xFF"
 ESCAPE_SEQUENCE = b"\xAA\xAA\xAA\xAA"
 SHRED = True
 TAR = True
+CPUS = 1
 
 DEFAULT_CONFIG = {
     "chunksize": CHUNKSIZE,
@@ -46,6 +47,7 @@ DEFAULT_CONFIG = {
     "shred": SHRED,
     "tar": TAR,
     "name": NAME,
+    "cpus": CPUS,
 }
 
 CONFIG_FILE = CONFIG_DIR / "config.mpk"

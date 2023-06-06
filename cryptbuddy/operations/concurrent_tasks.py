@@ -1,6 +1,7 @@
 import concurrent.futures
 from multiprocessing.managers import BaseManager
 from pathlib import Path
+from time import sleep
 from typing import Callable, List, NewType, Union
 
 from rich.progress import Progress, TaskID
@@ -71,13 +72,13 @@ def run(
             progress.update(
                 overall_progress_task, completed=n_finished, total=len(futures)
             )
-            total = state.get(task_id)["total"]
-            completed = state.get(task_id)["completed"]
-            if total > completed:
-                progress.update(
-                    task_id,
-                    completed=completed,
-                    total=total,
-                )
+            for task, value in state.get_tasks():
+                total = value["total"]
+                completed = value["completed"]
+                progress.update(task, completed=completed, total=total)
+        progress.update(
+            overall_progress_task, completed=len(futures), total=len(futures)
+        )
         for future in futures:
             future.result()
+    progress.stop()

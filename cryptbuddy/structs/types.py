@@ -2,7 +2,7 @@ class ProgressState:
     def __init__(self):
         self.tasks = {}
 
-    def add_task(self, task_id, completed=0, total=0):
+    def add_task(self, task_id, completed=0, total=10):
         self.tasks[task_id] = {"completed": completed, "total": total}
 
     def update(self, task_id, completed=None, total=None):
@@ -16,3 +16,6 @@ class ProgressState:
 
     def increment(self, task_id, completed=1):
         self.tasks[task_id]["completed"] += completed
+
+    def get_tasks(self):
+        return self.tasks.items()

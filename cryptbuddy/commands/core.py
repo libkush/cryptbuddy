@@ -1,5 +1,4 @@
 import base64
-import multiprocessing as mp
 from pathlib import Path
 from shutil import copyfile
 from typing import List, Optional
@@ -16,13 +15,13 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
-from rich.style import Style
 from typing_extensions import Annotated
 
 import cryptbuddy.commands.keychain as chain
 from cryptbuddy.config import (
     CHUNKSIZE,
     CONFIG_DIR,
+    CPUS,
     DATA_DIR,
     KEYSIZE,
     MACSIZE,
@@ -34,7 +33,6 @@ from cryptbuddy.config import (
 )
 from cryptbuddy.functions.file_io import get_decrypted_outfile, get_encrypted_outfile
 from cryptbuddy.functions.file_io import shred as shred_file
-from cryptbuddy.functions.file_io import untar_directory
 from cryptbuddy.operations.asymmetric import asymmetric_decrypt, asymmetric_encrypt
 from cryptbuddy.operations.clean import clean
 from cryptbuddy.operations.concurrent_tasks import run
@@ -219,7 +217,7 @@ def encrypt(
             "-t",
             help="Number of CPUs to use for encryption",
         ),
-    ] = 2,
+    ] = CPUS,
 ):
     """
     Encrypt file(s) or folder(s) using a password or public keys of one or more
@@ -244,7 +242,6 @@ def encrypt(
         "[progress.percentage]{task.percentage:>3.0f}%",
         TimeRemainingColumn(),
         TimeElapsedColumn(),
-        refresh_per_second=5,  # bit slower updates
     )
 
     if symmetric and password:
@@ -271,7 +268,7 @@ def encrypt(
             cpus=cpus,
         )
 
-        success("\nFile(s) encrypted successfully")
+        success("File(s) encrypted.")
         return None
 
     if not symmetric and user:
@@ -319,13 +316,14 @@ def encrypt(
             cpus=cpus,
         )
 
-        success("File(s) encrypted successfully")
+        success("File(s) encrypted.")
         return None
 
     error("Please specify either symmetric (with password) or users for encryption")
     return None
 
 
+# TODO: untar files after decryption
 @app.command()
 def decrypt(
     paths: Annotated[
@@ -385,7 +383,7 @@ def decrypt(
             "-t",
             help="Number of CPUs to use for decryption",
         ),
-    ] = 2,
+    ] = CPUS,
 ):
     """
     Decrypt file(s) or folder(s) symmetrically using a password or
@@ -397,7 +395,6 @@ def decrypt(
         "[progress.percentage]{task.percentage:>3.0f}%",
         TimeRemainingColumn(),
         TimeElapsedColumn(),
-        refresh_per_second=5,  # bit slower updates
     )
 
     # password is required to generate the key in symmetric decryption
@@ -418,7 +415,7 @@ def decrypt(
             cpus=cpus,
         )
 
-        success("File(s) decrypted successfully")
+        success("File(s) decrypted.")
 
     # for asymmetric decryption, we need the private key
     # the private key is always encrypted with a password
@@ -445,7 +442,7 @@ def decrypt(
             cpus=cpus,
         )
 
-        success("File(s) decrypted successfully")
+        success("File(s) decrypted.")
 
 
 @app.command(name="shred")
@@ -467,7 +464,7 @@ def shred_path(
     for path in paths:
         shred_file(path)
 
-    success("File(s) shredded successfully")
+    success("File(s) shredded.")
 
 
 @app.command()
@@ -494,4 +491,4 @@ def export(
     except Exception as e:
         error(e)
 
-    success("File exported successfully")
+    success("File exported.")

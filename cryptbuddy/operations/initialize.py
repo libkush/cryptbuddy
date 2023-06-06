@@ -51,4 +51,4 @@ def initialize(name: str, email: str, password: str, progress: Progress | None =
 
     progress.stop()
 
-    success("CryptBuddy initialized successfully.")
+    success("CryptBuddy initialized..")
