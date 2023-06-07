@@ -6,7 +6,7 @@ from typing import Callable, List, NewType, Union
 
 from rich.progress import Progress, TaskID
 
-from cryptbuddy.structs.key_types import (
+from cryptbuddy.structs.options import (
     AsymmetricDecryptOptions,
     AsymmetricEncryptOptions,
     SymmetricDecryptOptions,
@@ -75,7 +75,13 @@ def run(
             for task, value in state.get_tasks():
                 total = value["total"]
                 completed = value["completed"]
-                progress.update(task, completed=completed, total=total)
+                description = value["description"]
+                if description:
+                    progress.update(
+                        task, completed=completed, total=total, description=description
+                    )
+                else:
+                    progress.update(task, completed=completed, total=total)
         progress.update(
             overall_progress_task, completed=len(futures), total=len(futures)
         )

@@ -8,6 +8,7 @@ from rich.table import Table
 from rich.text import Text
 
 from cryptbuddy.config import CACHE_DIR
+from cryptbuddy.structs.types import ProgressState
 
 console = Console()
 
@@ -52,7 +53,7 @@ def info(*msgs: object):
     console.print(text)
 
 
-def error(e: Exception, progress: Progress = None, task: TaskID = None):
+def error(e: Exception, progress: ProgressState = None, task: TaskID = None):
     """
     Prints error messages to the console and logs them.
 
@@ -65,11 +66,7 @@ def error(e: Exception, progress: Progress = None, task: TaskID = None):
     message = str(e)
     text = Text(message, style="bold red")
     if progress and task:
-        progress.update(
-            task,
-            description=f"[bold red]Error: {message}",
-            completed=0,
-        )
+        progress.update(task, description=text, completed=0, total=1)
     else:
         console.print(text)
 

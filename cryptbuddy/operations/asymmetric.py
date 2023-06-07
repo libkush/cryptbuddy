@@ -6,10 +6,15 @@ from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.functions.asymmetric import decrypt, encrypt
 from cryptbuddy.functions.file_data import add_meta, parse_data
-from cryptbuddy.functions.file_io import shred, tar_directory, write_chunks
+from cryptbuddy.functions.file_io import (
+    shred,
+    tar_directory,
+    untar_directory,
+    write_chunks,
+)
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
-from cryptbuddy.structs.key_types import (
+from cryptbuddy.structs.options import (
     AsymmetricDecryptOptions,
     AsymmetricEncryptOptions,
 )
@@ -182,4 +187,8 @@ def asymmetric_decrypt(
         shred(path)
 
     write_chunks(file_data, output)
+
+    if output.suffix == ".tar":
+        untar_directory(output, output.parent, options.shred)
+
     return None

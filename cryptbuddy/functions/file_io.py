@@ -19,12 +19,8 @@ def write_chunks(chunks: List[bytes], path: Path) -> None:
         raise ValueError("Cannot write chunks to a directory")
     if not path.parent.exists():
         path.parent.mkdir(parents=True)
-    if not path.exists():
-        path.touch()
     with open(path, "wb") as outfile:
-        outfile.write(
-            b"".join(chunks) if chunks[-1] is not None else b"".join(chunks[:-1])
-        )
+        outfile.writelines(chunks if chunks[-1] is not None else chunks[:-1])
 
 
 def write_bytes(b: bytes, path: Path) -> None:
@@ -42,8 +38,6 @@ def write_bytes(b: bytes, path: Path) -> None:
         raise ValueError("Cannot write bytes to a directory")
     if not path.parent.exists():
         path.parent.mkdir(parents=True)
-    if not path.exists():
-        path.touch()
     with open(path, "wb") as outfile:
         outfile.write(b)
 
@@ -64,8 +58,9 @@ def shred(path: Path) -> None:
     paths = [path]
     if path.is_dir():
         paths = list(path.glob("**/*"))
-
     for file in paths:
+        if file.is_dir():
+            continue
         # overwrite the file with random data
         size = file.stat().st_size
         random_bits = urandom(size)

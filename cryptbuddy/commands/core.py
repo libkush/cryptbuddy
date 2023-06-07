@@ -40,13 +40,13 @@ from cryptbuddy.operations.initialize import initialize
 from cryptbuddy.operations.logger import error, success
 from cryptbuddy.operations.symmetric import symmetric_decrypt, symmetric_encrypt
 from cryptbuddy.structs.app_keys import AppPrivateKey
-from cryptbuddy.structs.key_types import (
+from cryptbuddy.structs.keychain import Keychain
+from cryptbuddy.structs.options import (
     AsymmetricDecryptOptions,
     AsymmetricEncryptOptions,
     SymmetricDecryptOptions,
     SymmetricEncryptOptions,
 )
-from cryptbuddy.structs.keychain import Keychain
 
 __version__ = get_distribution("cryptbuddy").version
 
