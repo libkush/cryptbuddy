@@ -3,7 +3,7 @@ from typing import List
 
 from nacl.bindings import sodium_increment
 from nacl.secret import SecretBox
-from rich.progress import Progress, TaskID
+from rich.progress import TaskID
 
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.structs.types import ProgressState
