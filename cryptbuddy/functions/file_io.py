@@ -116,7 +116,7 @@ def untar_directory(path: Path, output: Path, shred_file: bool) -> Path:
     return output
 
 
-def get_encrypted_outfile(path: Path, output: Path = None):
+def get_encrypted_outfile(path: Path, output: Path = None) -> Path:
     """
     Returns the path to the encrypted file.
 
@@ -136,7 +136,7 @@ def get_encrypted_outfile(path: Path, output: Path = None):
     return output_dir / encrypted_name
 
 
-def get_decrypted_outfile(path: Path, output: Path = None):
+def get_decrypted_outfile(path: Path, output: Path = None) -> Path:
     """
     Returns the path to the decrypted file.
 

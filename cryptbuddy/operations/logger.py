@@ -59,7 +59,7 @@ def error(e: Exception, progress: ProgressState = None, task: TaskID = None):
 
     ### Parameters
     - `e` (`Exception`): The exception to be printed.
-    - `progress` (`Progress`, optional): A rich progress instance.
+    - `progress` (`ProgressState`, optional): A progress state object.
     - `task` (`TaskID`, optional): The task to be updated.
     """
     error_logger.exception(e, exc_info=True)

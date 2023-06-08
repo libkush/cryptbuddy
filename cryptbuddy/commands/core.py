@@ -257,6 +257,7 @@ def encrypt(
             shred=shred,
         )
 
+        # we can concurrently handle multiple paths using multiprocessing (cpus)
         run(
             progress=progress,
             paths=paths,

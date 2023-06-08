@@ -13,6 +13,8 @@ def add_meta(
     ### Parameters
     - `meta` (`dict`): The metadata to be written.
     - `data` (`List[bytes]`): The data to be written.
+    - `delimiter` (`bytes`): The delimiter to be used.
+    - `esc` (`bytes`): The escape sequence to be used.
 
     ### Returns
     `List[bytes]`: The metadata prepended to the data.
@@ -33,6 +35,8 @@ def parse_data(data: bytes, delimiter: bytes, esc: bytes) -> Tuple[dict, bytes]:
 
     ### Parameters
     - `data` (`bytes`): The data to be parsed.
+    - `delimiter` (`bytes`): The delimiter to be used.
+    - `esc` (`bytes`): The escape sequence to be used.
 
     ### Returns
     `dict`: The metadata.

@@ -35,11 +35,12 @@ def asymmetric_encrypt(
     - `path` (`Path`): The path to the file or folder to be encrypted.
     - `options` (`AsymmetricEncryptOptions`): The options for encryption.
     - `output` (`Path`): The path to the output file.
-    - `progress` (`Progress`, optional): A rich progress instance.
+    - `progress` (`ProgressState`, optional): The shared progress state object.
     """
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
 
+    # encrypt the symmetric key for each public key
     encrypted_symkeys = {}
     to_shred = options.shred
     for key in options.public_keys:
@@ -51,6 +52,7 @@ def asymmetric_encrypt(
             raise EncryptionError(f"Failed to encrypt symmetric key for {name}") from e
         encrypted_symkeys[name] = encrypted_symkey
 
+    # create metadata
     meta = {
         "type": options.type,
         "encrypted_symkeys": encrypted_symkeys,
@@ -59,12 +61,13 @@ def asymmetric_encrypt(
         "macsize": options.macsize,
     }
 
-    # create a tar archive if path is a directory
+    # we will create a single tar file for a directory
     if path.is_dir():
         original = path
         path = tar_directory(path)
         if options.shred:
             shred(original)
+        # original folder will be shredded regardless of options.shred
         to_shred = True
 
     file_data = path.read_bytes()
@@ -115,15 +118,14 @@ def asymmetric_decrypt(
     - `path` (`Path`): The path to the file or folder to be decrypted.
     - `options` (`AsymmetricDecryptOptions`): The options for decryption.
     - `output` (`Path`): The path to the output file.
-    - `progress` (`Progress`, optional): A rich progress instance.
+    - `progress` (`ProgressState`, optional): The shared progress state object.
     """
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
 
-    # read the file data
     encrypted_data = path.read_bytes()
 
-    # get the metadata
+    # parse the metadata and encrypted data
     try:
         meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
     except ValueError as e:
@@ -138,6 +140,7 @@ def asymmetric_decrypt(
         error(ValueError(f"{path} is not asymmetrically encrypted"), progress, task)
         return None
 
+    # get required metadata
     encrypted_symkeys: dict[str, bytes] = meta["encrypted_symkeys"]
     nonce = meta["nonce"]
     macsize = meta["macsize"]
@@ -147,6 +150,7 @@ def asymmetric_decrypt(
         error(ValueError(f"{path} is corrupt"), progress, task)
         return None
 
+    # decrypt personal private key
     try:
         private_key = options.private_key.decrypted_key(options.password)
     except DecryptionError as e:
@@ -155,13 +159,14 @@ def asymmetric_decrypt(
         error(err, progress, task)
         return None
 
+    # get the encrypted symmetric key for this user
     mykey = encrypted_symkeys[options.user]
     if not mykey:
         err = ValueError(f"{path} was not encrypted for {options.user}")
         error(err, progress, task)
         return None
 
-    # decrypt symkey
+    # decrypt the symmetric key using user's private key
     try:
         symkey = decrypt(private_key, mykey)
     except DecryptionError as e:
@@ -172,7 +177,7 @@ def asymmetric_decrypt(
         error(err, progress, task)
         return None
 
-    # decrypt the file data
+    # decrypt the file data using the symmetric key
     try:
         file_data = decrypt_data(
             encrypted_data, chunksize, symkey, nonce, macsize, progress, task
@@ -188,6 +193,7 @@ def asymmetric_decrypt(
 
     write_chunks(file_data, output)
 
+    # untar the directory if it was tarred
     if output.suffix == ".tar":
         untar_directory(output, output.parent, options.shred)
 
