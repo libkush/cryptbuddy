@@ -47,8 +47,10 @@ def run(
     - `progress` (`Progress`): The progress bar.
     - `paths` (`List[Path]`): The paths to the files or folders to be processed.
     - `type` (`str`): The type of operation to be performed.
-    - `file_getter` (`Callable[[Path, Path], Path]`): The function to get the output file.
-    - `op_func` (`Callable[[Path, Options, Path, dict, TaskID], None]`): The operation function.
+    - `file_getter` (`Callable[[Path, Path], Path]`): The function
+        to get the output file.
+    - `op_func` (`Callable[[Path, Options, Path, dict, TaskID], None]`): The
+        operation function.
     - `options` (`Options`): The options for the operation.
     - `output` (`Path`): The path to the output file.
     - `cpus` (`int`): The number of CPUs to use.

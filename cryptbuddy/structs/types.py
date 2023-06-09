@@ -1,5 +1,8 @@
 class ProgressState:
-    """ProgressState is a class that holds the state of a progress bar between processes."""
+    """
+    ProgressState is a class that holds the state
+    of a progress bar between processes.
+    """
 
     def __init__(self):
         self.tasks = {}
