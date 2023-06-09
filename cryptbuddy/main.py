@@ -101,5 +101,7 @@ app.command(no_args_is_help=True)(decrypt)
 
 app.command(no_args_is_help=True)(export)
 
+app.command(no_args_is_help=True)(shred_path)
+
 if __name__ == "__main__":
     app()
