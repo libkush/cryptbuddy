@@ -1,6 +1,6 @@
 import tarfile
+from os import urandom
 from pathlib import Path
-from random import choices
 from typing import List
 
 
@@ -19,11 +19,8 @@ def write_chunks(chunks: List[bytes], path: Path) -> None:
         raise ValueError("Cannot write chunks to a directory")
     if not path.parent.exists():
         path.parent.mkdir(parents=True)
-    if not path.exists():
-        path.touch()
     with open(path, "wb") as outfile:
-        for chunk in chunks:
-            outfile.write(chunk)
+        outfile.writelines(chunks if chunks[-1] is not None else chunks[:-1])
 
 
 def write_bytes(b: bytes, path: Path) -> None:
@@ -41,8 +38,6 @@ def write_bytes(b: bytes, path: Path) -> None:
         raise ValueError("Cannot write bytes to a directory")
     if not path.parent.exists():
         path.parent.mkdir(parents=True)
-    if not path.exists():
-        path.touch()
     with open(path, "wb") as outfile:
         outfile.write(b)
 
@@ -63,11 +58,12 @@ def shred(path: Path) -> None:
     paths = [path]
     if path.is_dir():
         paths = list(path.glob("**/*"))
-
     for file in paths:
+        if file.is_dir():
+            continue
         # overwrite the file with random data
         size = file.stat().st_size
-        random_bits = choices(range(256), k=size)
+        random_bits = urandom(size)
         with open(file, "wb") as f:
             f.write(bytes(random_bits))
 
@@ -120,7 +116,7 @@ def untar_directory(path: Path, output: Path, shred_file: bool) -> Path:
     return output
 
 
-def get_encrypted_outfile(path: Path, output: Path = None):
+def get_encrypted_outfile(path: Path, output: Path = None) -> Path:
     """
     Returns the path to the encrypted file.
 
@@ -140,7 +136,7 @@ def get_encrypted_outfile(path: Path, output: Path = None):
     return output_dir / encrypted_name
 
 
-def get_decrypted_outfile(path: Path, output: Path = None):
+def get_decrypted_outfile(path: Path, output: Path = None) -> Path:
     """
     Returns the path to the decrypted file.
 

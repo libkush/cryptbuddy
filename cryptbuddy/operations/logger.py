@@ -3,11 +3,12 @@ from logging.handlers import RotatingFileHandler
 from typing import List, Tuple
 
 from rich.console import Console
-from rich.progress import Progress, TaskID
+from rich.progress import TaskID
 from rich.table import Table
 from rich.text import Text
 
 from cryptbuddy.config import CACHE_DIR
+from cryptbuddy.structs.types import ProgressState
 
 console = Console()
 
@@ -52,23 +53,20 @@ def info(*msgs: object):
     console.print(text)
 
 
-def error(e: Exception, progress: Progress = None, task: TaskID = None):
+def error(e: Exception, progress: ProgressState = None, task: TaskID = None):
     """
     Prints error messages to the console and logs them.
 
     ### Parameters
     - `e` (`Exception`): The exception to be printed.
-    - `progress` (`Progress`, optional): A rich progress instance.
+    - `progress` (`ProgressState`, optional): A progress state object.
     - `task` (`TaskID`, optional): The task to be updated.
     """
     error_logger.exception(e, exc_info=True)
     message = str(e)
     text = Text(message, style="bold red")
     if progress and task:
-        progress.update(
-            task,
-            description=f"[bold red]Error: {message}",
-        )
+        progress.update(task, description=text, completed=0, total=1)
     else:
         console.print(text)
 

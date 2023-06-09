@@ -18,7 +18,7 @@ if not DATA_DIR.exists():
 if not CONFIG_DIR.exists():
     CONFIG_DIR.mkdir(parents=True)
 
-CHUNKSIZE = 64 * 1024
+CHUNKSIZE = 5 * 1024 * 1024
 MACSIZE = secret.SecretBox.MACBYTES
 OPS = pwhash.argon2i.OPSLIMIT_SENSITIVE
 MEM = pwhash.argon2i.MEMLIMIT_SENSITIVE
@@ -29,6 +29,7 @@ DELIMITER = b"\xFF\xFF\xFF\xFF"
 ESCAPE_SEQUENCE = b"\xAA\xAA\xAA\xAA"
 SHRED = True
 TAR = True
+CPUS = 1
 
 DEFAULT_CONFIG = {
     "chunksize": CHUNKSIZE,
@@ -46,6 +47,7 @@ DEFAULT_CONFIG = {
     "shred": SHRED,
     "tar": TAR,
     "name": NAME,
+    "cpus": CPUS,
 }
 
 CONFIG_FILE = CONFIG_DIR / "config.mpk"

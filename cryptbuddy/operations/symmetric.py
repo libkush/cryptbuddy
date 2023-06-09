@@ -1,21 +1,28 @@
 from pathlib import Path
 
-from rich.progress import Progress
+from rich.progress import TaskID
 
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
 from cryptbuddy.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.functions.file_data import add_meta, parse_data
-from cryptbuddy.functions.file_io import shred, tar_directory, write_chunks
+from cryptbuddy.functions.file_io import (
+    shred,
+    tar_directory,
+    untar_directory,
+    write_chunks,
+)
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
-from cryptbuddy.structs.types import SymmetricDecryptOptions, SymmetricEncryptOptions
+from cryptbuddy.structs.options import SymmetricDecryptOptions, SymmetricEncryptOptions
+from cryptbuddy.structs.types import ProgressState
 
 
 def symmetric_encrypt(
     path: Path,
     options: SymmetricEncryptOptions,
     output: Path,
-    progress: Progress = None,
+    progress: ProgressState = None,
+    task: TaskID = None,
 ) -> None:
     """
     Encrypts the given file or folder symmetrically.
@@ -23,6 +30,7 @@ def symmetric_encrypt(
     ### Parameters
     - `path` (`Path`): The path to the file or folder to be encrypted.
     - `options` (`SymmetricEncryptOptions`): The options for encryption.
+    - `progress` (`ProgressState`, optional): The shared progress state object.
     - `output` (`Path`): The path to the output file.
 
     ### Raises
@@ -32,6 +40,8 @@ def symmetric_encrypt(
         raise FileNotFoundError("File or folder does not exist")
 
     to_shred = options.shred
+
+    # create metadata
     meta = {
         "type": options.type,
         "nonce": options.nonce,
@@ -49,15 +59,10 @@ def symmetric_encrypt(
         path = tar_directory(path)
         if options.shred:
             shred(original)
+        # original directory shredded regardless of options.shred
         to_shred = True
 
     file_data = path.read_bytes()
-
-    task = (
-        progress.add_task(f"[cyan]Encrypting: {path.name}", total=len(file_data))
-        if progress
-        else None
-    )
 
     try:
         # encrypt the file data
@@ -70,7 +75,7 @@ def symmetric_encrypt(
             progress,
             task,
         )
-    except EncryptionError as e:
+    except Exception as e:
         err = EncryptionError(f"Failed to encrypt file data for {path.name}")
         err.__cause__ = e
         error(err, progress, task)
@@ -95,7 +100,8 @@ def symmetric_decrypt(
     path: Path,
     options: SymmetricDecryptOptions,
     output: Path,
-    progress: Progress = None,
+    progress: ProgressState = None,
+    task: TaskID = None,
 ) -> None:
     """
     Decrypts the given file or folder symmetrically.
@@ -104,6 +110,8 @@ def symmetric_decrypt(
     - `path` (`Path`): The path to the file or folder to be decrypted.
     - `options` (`SymmetricDecryptOptions`): The options for decryption.
     - `output` (`Path`): The path to the output file.
+    - `progress` (`ProgressState`, optional): The shared progress state object.
+    - `task` (`TaskID`, optional): The task ID for the progress bar.
 
     ### Raises
     - `FileNotFoundError`: If the file or folder does not exist.
@@ -112,17 +120,10 @@ def symmetric_decrypt(
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
 
-    # read the file data
     encrypted_data = path.read_bytes()
 
-    task = (
-        progress.add_task(f"[cyan]Decrypting: {path.name}", total=len(encrypted_data))
-        if progress
-        else None
-    )
-
     try:
-        # get the metadata
+        # parse metadata and encrypted data
         meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
     except ValueError as e:
         err = ValueError(
@@ -137,6 +138,7 @@ def symmetric_decrypt(
         error(err, progress, task)
         return None
 
+    # get required values from metadata
     ops = meta["ops"]
     mem = meta["mem"]
     salt = meta["salt"]
@@ -149,6 +151,7 @@ def symmetric_decrypt(
         error(ValueError(f"{path} is corrupt"), progress, task)
         return None
 
+    # get the symmetric key
     key = options.get_key(salt, mem, ops, keysize)
 
     try:
@@ -162,7 +165,7 @@ def symmetric_decrypt(
             progress,
             task,
         )
-    except DecryptionError as e:
+    except Exception as e:
         err = DecryptionError(f"Failed to decrypt file data for {path.name}")
         err.__cause__ = e
         error(err, progress, task)
@@ -172,4 +175,9 @@ def symmetric_decrypt(
         shred(path)
 
     write_chunks(decrypted_data, output)
+
+    # untar the directory if output is a directory
+    if output.suffix == ".tar":
+        untar_directory(output, output.parent, options.shred)
+
     return None

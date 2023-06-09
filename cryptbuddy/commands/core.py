@@ -1,5 +1,4 @@
 import base64
-import multiprocessing as mp
 from pathlib import Path
 from shutil import copyfile
 from typing import List, Optional
@@ -8,14 +7,21 @@ import typer
 from nacl.utils import random
 from password_strength import PasswordStats
 from pkg_resources import get_distribution
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
-from rich.style import Style
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 from typing_extensions import Annotated
 
 import cryptbuddy.commands.keychain as chain
 from cryptbuddy.config import (
     CHUNKSIZE,
     CONFIG_DIR,
+    CPUS,
     DATA_DIR,
     KEYSIZE,
     MACSIZE,
@@ -27,15 +33,15 @@ from cryptbuddy.config import (
 )
 from cryptbuddy.functions.file_io import get_decrypted_outfile, get_encrypted_outfile
 from cryptbuddy.functions.file_io import shred as shred_file
-from cryptbuddy.functions.file_io import untar_directory
 from cryptbuddy.operations.asymmetric import asymmetric_decrypt, asymmetric_encrypt
 from cryptbuddy.operations.clean import clean
+from cryptbuddy.operations.concurrent_tasks import run
 from cryptbuddy.operations.initialize import initialize
 from cryptbuddy.operations.logger import error, success
 from cryptbuddy.operations.symmetric import symmetric_decrypt, symmetric_encrypt
 from cryptbuddy.structs.app_keys import AppPrivateKey
 from cryptbuddy.structs.keychain import Keychain
-from cryptbuddy.structs.types import (
+from cryptbuddy.structs.options import (
     AsymmetricDecryptOptions,
     AsymmetricEncryptOptions,
     SymmetricDecryptOptions,
@@ -204,6 +210,14 @@ def encrypt(
             help="Whether to shred the original file after encryption",
         ),
     ] = SHRED,
+    cpus: Annotated[
+        int,
+        typer.Option(
+            "--cpus",
+            "-t",
+            help="Number of CPUs to use for encryption",
+        ),
+    ] = CPUS,
 ):
     """
     Encrypt file(s) or folder(s) using a password or public keys of one or more
@@ -223,12 +237,11 @@ def encrypt(
     bsalt = base64.b64decode(salt)
 
     progress = Progress(
-        SpinnerColumn(),
-        TextColumn("{task.description}[progress.description]"),
-        BarColumn(
-            style=Style(color="red"),
-            complete_style=Style(color="green"),
-        ),
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.0f}%",
+        TimeRemainingColumn(),
+        TimeElapsedColumn(),
     )
 
     if symmetric and password:
@@ -244,16 +257,19 @@ def encrypt(
             shred=shred,
         )
 
-        progress.start()
-        for path in paths:
-            encrypted_path = get_encrypted_outfile(path, output)  # output file
-            try:
-                symmetric_encrypt(path, options, encrypted_path, progress)
-            except Exception:
-                continue
-        progress.stop()
+        # we can concurrently handle multiple paths using multiprocessing (cpus)
+        run(
+            progress=progress,
+            paths=paths,
+            op_type="encrypt",
+            file_getter=get_encrypted_outfile,
+            op_func=symmetric_encrypt,
+            options=options,
+            output=output,
+            cpus=cpus,
+        )
 
-        success("File(s) encrypted successfully")
+        success("File(s) encrypted.")
         return None
 
     if not symmetric and user:
@@ -290,16 +306,18 @@ def encrypt(
             shred=shred,
         )
 
-        progress.start()
-        for path in paths:
-            encrypted_path = get_encrypted_outfile(path, output)  # output file
-            try:
-                asymmetric_encrypt(path, options, encrypted_path, progress)
-            except Exception:
-                continue
-        progress.stop()
+        run(
+            progress=progress,
+            paths=paths,
+            op_type="encrypt",
+            file_getter=get_encrypted_outfile,
+            op_func=asymmetric_encrypt,
+            options=options,
+            output=output,
+            cpus=cpus,
+        )
 
-        success("File(s) encrypted successfully")
+        success("File(s) encrypted.")
         return None
 
     error("Please specify either symmetric (with password) or users for encryption")
@@ -358,18 +376,25 @@ def decrypt(
             help="Output directory to store the decrypted file(s)",
         ),
     ] = None,
+    cpus: Annotated[
+        int,
+        typer.Option(
+            "--cpus",
+            "-t",
+            help="Number of CPUs to use for decryption",
+        ),
+    ] = CPUS,
 ):
     """
     Decrypt file(s) or folder(s) symmetrically using a password or
     asymmetrically using your private key
     """
     progress = Progress(
-        SpinnerColumn(),
-        TextColumn("{task.description}[progress.description]"),
-        BarColumn(
-            style=Style(color="red"),
-            complete_style=Style(color="green"),
-        ),
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.0f}%",
+        TimeRemainingColumn(),
+        TimeElapsedColumn(),
     )
 
     # password is required to generate the key in symmetric decryption
@@ -379,18 +404,18 @@ def decrypt(
             shred=shred,
         )
 
-        progress.start()
-        for path in paths:
-            decrypted_path = get_decrypted_outfile(path, output)
-            try:
-                symmetric_decrypt(path, options, decrypted_path, progress)
-            except Exception:
-                continue
-            if decrypted_path.exists() and decrypted_path.suffix == ".tar":
-                untar_directory(decrypted_path, decrypted_path.parent, shred)
-        progress.stop()
+        run(
+            progress=progress,
+            paths=paths,
+            op_type="decrypt",
+            file_getter=get_decrypted_outfile,
+            op_func=symmetric_decrypt,
+            options=options,
+            output=output,
+            cpus=cpus,
+        )
 
-        success("File(s) decrypted successfully")
+        success("File(s) decrypted.")
 
     # for asymmetric decryption, we need the private key
     # the private key is always encrypted with a password
@@ -406,18 +431,18 @@ def decrypt(
             shred=shred,
         )
 
-        progress.start()
-        for path in paths:
-            decrypted_path = get_decrypted_outfile(path, output)
-            try:
-                asymmetric_decrypt(path, options, decrypted_path, progress)
-            except Exception:
-                continue
-            if decrypted_path.exists() and decrypted_path.suffix == ".tar":
-                untar_directory(decrypted_path, decrypted_path.parent, shred)
-        progress.stop()
+        run(
+            progress=progress,
+            paths=paths,
+            op_type="decrypt",
+            file_getter=get_decrypted_outfile,
+            op_func=asymmetric_decrypt,
+            options=options,
+            output=output,
+            cpus=cpus,
+        )
 
-        success("File(s) decrypted successfully")
+        success("File(s) decrypted.")
 
 
 @app.command(name="shred")
@@ -439,7 +464,7 @@ def shred_path(
     for path in paths:
         shred_file(path)
 
-    success("File(s) shredded successfully")
+    success("File(s) shredded.")
 
 
 @app.command()
@@ -466,4 +491,4 @@ def export(
     except Exception as e:
         error(e)
 
-    success("File exported successfully")
+    success("File exported.")
