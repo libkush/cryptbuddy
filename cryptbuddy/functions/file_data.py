@@ -1,4 +1,3 @@
-from time import perf_counter_ns
 from typing import List, Tuple
 
 from ormsgpack import packb, unpackb
