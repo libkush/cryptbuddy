@@ -3,7 +3,6 @@ from pathlib import Path
 from rich.progress import TaskID
 
 from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
-from cryptbuddy.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.functions.file_data import add_meta, parse_data
 from cryptbuddy.functions.file_io import (
     shred,
@@ -13,6 +12,7 @@ from cryptbuddy.functions.file_io import (
 )
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
+from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.structs.options import SymmetricDecryptOptions, SymmetricEncryptOptions
 from cryptbuddy.structs.types import ProgressState
 

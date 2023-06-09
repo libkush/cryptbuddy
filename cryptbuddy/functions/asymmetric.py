@@ -1,6 +1,6 @@
 from nacl.public import PrivateKey, PublicKey, SealedBox
 
-from cryptbuddy.exceptions import DecryptionError, EncryptionError
+from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
 
 
 def encrypt(public_key: PublicKey, message: bytes) -> bytes:
