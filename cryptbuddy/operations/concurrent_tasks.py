@@ -30,7 +30,7 @@ Options = NewType("Options", OptionsBase)
 def run(
     progress: Progress,
     paths: List[Path],
-    type: str,  # will be encrypt or decrypt
+    op_type: str,  # will be encrypt or decrypt
     file_getter: Callable[
         [Path, Path], Path
     ],  # will be encrypted_file_getter or decrypted_file_getter
@@ -58,9 +58,9 @@ def run(
     futures = []
     doing = (
         "Encrypting"
-        if type == "encrypt"
+        if op_type == "encrypt"
         else "Decrypting"
-        if type == "decrypt"
+        if op_type == "decrypt"
         else "Processing"
     )  # what we are doing
 

@@ -261,7 +261,7 @@ def encrypt(
         run(
             progress=progress,
             paths=paths,
-            type="encrypt",
+            op_type="encrypt",
             file_getter=get_encrypted_outfile,
             op_func=symmetric_encrypt,
             options=options,
@@ -309,7 +309,7 @@ def encrypt(
         run(
             progress=progress,
             paths=paths,
-            type="encrypt",
+            op_type="encrypt",
             file_getter=get_encrypted_outfile,
             op_func=asymmetric_encrypt,
             options=options,
@@ -408,7 +408,7 @@ def decrypt(
         run(
             progress=progress,
             paths=paths,
-            type="decrypt",
+            op_type="decrypt",
             file_getter=get_decrypted_outfile,
             op_func=symmetric_decrypt,
             options=options,
@@ -435,7 +435,7 @@ def decrypt(
         run(
             progress=progress,
             paths=paths,
-            type="decrypt",
+            op_type="decrypt",
             file_getter=get_decrypted_outfile,
             op_func=asymmetric_decrypt,
             options=options,
