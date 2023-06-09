@@ -99,7 +99,7 @@ def run(
             )
 
         # while the futures are not all done, update the progress bar
-        while (n_finished := sum([future.done() for future in futures])) < len(futures):
+        while (n_finished := sum(future.done() for future in futures)) < len(futures):
             progress.update(
                 overall_progress_task, completed=n_finished, total=len(futures)
             )
