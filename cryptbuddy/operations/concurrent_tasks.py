@@ -1,7 +1,6 @@
 import concurrent.futures
 from multiprocessing.managers import BaseManager
 from pathlib import Path
-from time import sleep
 from typing import Callable, List, NewType, Union
 
 from rich.progress import Progress, TaskID
@@ -54,7 +53,6 @@ def run(
     - `output` (`Path`): The path to the output file.
     - `cpus` (`int`): The number of CPUs to use.
     """
-
     futures = []
     doing = (
         "Encrypting"

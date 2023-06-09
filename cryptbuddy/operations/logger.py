@@ -3,7 +3,7 @@ from logging.handlers import RotatingFileHandler
 from typing import List, Tuple
 
 from rich.console import Console
-from rich.progress import Progress, TaskID
+from rich.progress import TaskID
 from rich.table import Table
 from rich.text import Text
 
