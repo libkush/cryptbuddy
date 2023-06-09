@@ -324,7 +324,6 @@ def encrypt(
     return None
 
 
-# TODO: untar files after decryption
 @app.command()
 def decrypt(
     paths: Annotated[
