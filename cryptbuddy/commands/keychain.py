@@ -12,7 +12,7 @@ app = typer.Typer(no_args_is_help=True, add_completion=True)
 chain = Keychain()
 
 
-@app.command()
+@app.command(no_args_is_help=True)
 def add(
     key: Annotated[
         Path,
@@ -33,7 +33,7 @@ def add(
     success(f"{public_key.meta.name}'s public key added to the keychain")
 
 
-@app.command()
+@app.command(no_args_is_help=True)
 def delete(
     name: Annotated[
         Optional[str],
@@ -56,7 +56,7 @@ def delete(
     success(f"{name}'s public key deleted from the keychain")
 
 
-@app.command("list")
+@app.command("list", no_args_is_help=True)
 def list_cmd():
     """List all the keys in your keychain"""
     keys = chain.get_names()

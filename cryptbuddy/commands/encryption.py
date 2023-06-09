@@ -1,26 +1,14 @@
 import base64
 from pathlib import Path
-from shutil import copyfile
 from typing import List, Optional
 
 import typer
 from nacl.utils import random
-from password_strength import PasswordStats
-from pkg_resources import get_distribution
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-)
+from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingColumn
 from typing_extensions import Annotated
 
-import cryptbuddy.commands.keychain as chain
 from cryptbuddy.config import (
     CHUNKSIZE,
-    CONFIG_DIR,
     CPUS,
     DATA_DIR,
     KEYSIZE,
@@ -32,11 +20,8 @@ from cryptbuddy.config import (
     SHRED,
 )
 from cryptbuddy.functions.file_io import get_decrypted_outfile, get_encrypted_outfile
-from cryptbuddy.functions.file_io import shred as shred_file
 from cryptbuddy.operations.asymmetric import asymmetric_decrypt, asymmetric_encrypt
-from cryptbuddy.operations.clean import clean
 from cryptbuddy.operations.concurrent_tasks import run
-from cryptbuddy.operations.initialize import initialize
 from cryptbuddy.operations.logger import error, success
 from cryptbuddy.operations.symmetric import symmetric_decrypt, symmetric_encrypt
 from cryptbuddy.structs.app_keys import AppPrivateKey
@@ -48,87 +33,7 @@ from cryptbuddy.structs.options import (
     SymmetricEncryptOptions,
 )
 
-__version__ = get_distribution("cryptbuddy").version
 
-
-app = typer.Typer(
-    name="CryptBuddy",
-    help="A CLI tool for encryption and decryption",
-    add_completion=True,
-    no_args_is_help=True,  # show help when no arguments are provided
-    context_settings={"help_option_names": ["-h", "--help"]},  # add -h and --help
-)
-app.add_typer(chain.app, name="keychain", help="Manage your keychain")
-
-
-def version_callback(value: bool):
-    """Callback for the --version option"""
-    if value:
-        print(f"CryptBuddy Version: {__version__}")
-        raise typer.Exit()
-
-
-@app.callback()
-def common(
-    # skipcq: PYL-W0613
-    ctx: typer.Context,
-    # skipcq: PYL-W0613
-    version: bool = typer.Option(None, "--version", "-v", callback=version_callback),
-):
-    """A CLI tool for encryption and decryption"""
-
-
-@app.command()
-def init(
-    name: Annotated[str, typer.Option("--name", "-u", help="Username")],
-    email: Annotated[str, typer.Option("--email", "-e", prompt=True)],
-    password: Annotated[
-        str,
-        typer.Option(
-            "--password",
-            "-p",
-            prompt=True,
-            confirmation_prompt=True,
-            hide_input=True,
-            help="Password to encrypt your private key",
-        ),
-    ],
-    clean_dirs: Annotated[
-        Optional[bool],
-        typer.Option(
-            "--clean",
-            "-c",
-            is_flag=True,
-            help="Clean existing data before initializing",
-        ),
-    ] = False,
-):
-    """
-    Initialize cryptbuddy by generating a key-pair and creating the
-    keychain database
-    """
-    progress = Progress(
-        SpinnerColumn(),
-        TextColumn("[bold blue]{task.description}"),
-        transient=False,
-    )
-
-    if clean_dirs:
-        clean()
-
-    stats = PasswordStats(password).strength()
-    if stats < 0.3:
-        error("Password is too weak!")
-
-    progress.start()
-    try:
-        initialize(name, email, password, progress)
-    except Exception as e:
-        error(e)
-    progress.stop()
-
-
-@app.command()
 def encrypt(
     paths: Annotated[
         List[Path],
@@ -324,7 +229,6 @@ def encrypt(
     return None
 
 
-@app.command()
 def decrypt(
     paths: Annotated[
         List[Path],
@@ -443,52 +347,3 @@ def decrypt(
         )
 
         success("File(s) decrypted.")
-
-
-@app.command(name="shred")
-def shred_path(
-    paths: Annotated[
-        List[Path],
-        typer.Argument(
-            exists=True,
-            readable=True,
-            writable=True,
-            resolve_path=True,
-            help="Paths of the file(s) and folder(s) to shred",
-        ),
-    ],
-):
-    """Shred file(s) or folder(s)"""
-    # shredding works by overwriting the file with random data
-    # and then deleting it. this way, the file is unrecoverable
-    for path in paths:
-        shred_file(path)
-
-    success("File(s) shredded.")
-
-
-@app.command()
-def export(
-    directory: Annotated[
-        Path,
-        typer.Argument(
-            help="Directory to export the public key to",
-            exists=True,
-            writable=True,
-            resolve_path=True,
-            dir_okay=True,
-            file_okay=False,
-        ),
-    ]
-):
-    """Export your public key file to specified directory to share with others"""
-    public_key_path = Path(f"{CONFIG_DIR}/public.key")
-    if not public_key_path.exists():
-        error("Public key not found")
-
-    try:
-        copyfile(public_key_path, Path(f"{directory}/public.key"))
-    except Exception as e:
-        error(e)
-
-    success("File exported.")
