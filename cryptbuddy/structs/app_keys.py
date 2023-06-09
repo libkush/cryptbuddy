@@ -59,17 +59,14 @@ class AppPrivateKey(BaseKey):
     - `name` (`str`): The name of the user.
     - `email` (`str`): The email of the user.
 
-    ### Raises
-    - `FileExistsError`: If the file already exists.
-
     ### Attributes
     - `data` (`bytes`): The encrypted key data.
     - `meta` (`KeyMeta`): The metadata of the encrypted key.
 
     ### Methods
     - `save(path: Path)`: Save the key to a file.
-    - `decrypt_key(key: AppPrivateKey, password: str)`: Decrypt an
-        AppPrivateKey instance.
+    - `decrypt_key(data: bytes, password: str)`: Decrypt an
+        AppPrivateKey's data.
     - `decrypted_key(password: str)`: Return a decrypted
         AppPrivateKey instance.
     - `from_data(data: bytes, password: str)`: Create an AppPrivateKey
@@ -254,6 +251,7 @@ class AppPublicKey(BaseKey):
     ### Parameters
     - `key` (`PublicKey`): The public key to encrypt.
     - `name` (`str`): The name of the key owner.
+    - `email` (`str`): The email of the key owner.
 
     ### Attributes
     - 'key' (`PublicKey`): The public key.

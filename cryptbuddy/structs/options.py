@@ -10,13 +10,13 @@ class EncryptOptions:
     Options for encryption.
 
     ### Attributes
+    - `nonce` (`bytes`): The nonce to be used for encryption.
+    - `salt` (`bytes`): The salt to be used for encryption.
     - `keysize` (`int`): The size of the encryption key.
-    - `chunksize` (`int`): The size of each chunk to be encrypted.
     - `macsize` (`int`): The size of the message authentication code.
     - `noncesize` (`int`): The size of the nonce.
     - `saltbytes` (`int`): The size of the salt.
-    - `salt` (`bytes`): The salt to be used for encryption.
-    - `nonce` (`bytes`): The nonce to be used for encryption.
+    - `chunksize` (`int`): The size of each chunk to be encrypted.
     - `mem` (`int`): The amount of memory to be used for encryption.
     - `ops` (`int`): The number of operations to be used for encryption.
     - `shred` (`bool`): Whether to shred the file after encryption.

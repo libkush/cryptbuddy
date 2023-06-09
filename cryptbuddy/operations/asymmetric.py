@@ -68,6 +68,7 @@ def asymmetric_encrypt(
         if options.shred:
             shred(original)
         # original folder will be shredded regardless of options.shred
+        # since it is now a tar file
         to_shred = True
 
     file_data = path.read_bytes()

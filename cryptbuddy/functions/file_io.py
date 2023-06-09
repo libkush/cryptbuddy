@@ -20,6 +20,7 @@ def write_chunks(chunks: List[bytes], path: Path) -> None:
     if not path.parent.exists():
         path.parent.mkdir(parents=True)
     with open(path, "wb") as outfile:
+        # sometimes the last chunk is None, so we don't want to write it
         outfile.writelines(chunks if chunks[-1] is not None else chunks[:-1])
 
 

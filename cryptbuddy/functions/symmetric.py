@@ -90,7 +90,7 @@ def encrypt_data(
                 # get the index and encrypted chunk
                 i, outchunk = future.result()
 
-                # if the chunk is an error, raise it
+                # if the result is an error, raise it
                 if isinstance(outchunk, EncryptionError):
                     raise outchunk
 
