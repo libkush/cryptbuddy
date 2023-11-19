@@ -1,1 +1,1 @@
-from cryptbuddy import commands, functions, operations, structs
+from cryptbuddy import commands, functions, operations, structs  # skipcq: PY-W2000
