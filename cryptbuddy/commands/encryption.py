@@ -208,7 +208,7 @@ def encrypt(
     e = ValueError(
         "Please specify either symmetric (with password) or users for encryption"
     )
-    error(e, console=progress.console)
+    return error(e, console=progress.console)
 
 
 def decrypt(
@@ -322,3 +322,4 @@ def decrypt(
             progress.advance(overall_progress_task)
         success("File(s) decrypted.", console=progress.console)
         return progress.stop()
+    return None

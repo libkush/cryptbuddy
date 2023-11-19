@@ -36,7 +36,7 @@ def export(
     except Exception as e:
         return error(e, console=console)
 
-    success("File exported.", console=console)
+    return success("File exported.", console=console)
 
 
 def shred_path(
@@ -58,4 +58,4 @@ def shred_path(
     for path in paths:
         shred_file(path)
 
-    success("File(s) shredded.", console=console)
+    return success("File(s) shredded.", console=console)

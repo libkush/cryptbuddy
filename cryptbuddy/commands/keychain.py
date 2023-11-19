@@ -31,7 +31,7 @@ def add(
     console = Console()
     public_key = AppPublicKey.from_file(key)
     chain.add_key(public_key)
-    success(
+    return success(
         f"{public_key.meta.name}'s public key added to the keychain",
         console=console,
     )
@@ -54,11 +54,10 @@ def delete(
         return error(e, console=console)
     if id:
         chain.delete_key(id=id)
-        success(f"Key with ID {id} deleted from the keychain", console=console)
-    else:
-        chain.delete_key(name=name)
+        return success(f"Key with ID {id} deleted from the keychain", console=console)
 
-    success(f"{name}'s public key deleted from the keychain", console=console)
+    chain.delete_key(name=name)
+    return success(f"{name}'s public key deleted from the keychain", console=console)
 
 
 @app.command("list", no_args_is_help=True)

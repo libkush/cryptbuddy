@@ -51,4 +51,4 @@ def initialize(name: str, email: str, password: str, progress: Progress):
     keychain.add_key(public_key)
     keychain.close()
     progress.update(task, description="Keychain created\n", completed=3)
-    success("CryptBuddy initialized..", console=progress.console)
+    return success("CryptBuddy initialized..", console=progress.console)
