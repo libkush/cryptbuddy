@@ -267,7 +267,6 @@ def decrypt(
     Decrypt file(s) symmetrically using a password or
     asymmetrically using your private key
     """
-
     progress = Progress(
         TextColumn("{task.description}"),
         SpinnerColumn(spinner_name="point", finished_text="done"),
