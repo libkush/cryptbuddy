@@ -83,6 +83,18 @@ def get_decrypted_outfile(path: Path, output: Path | None = None) -> Path:
 
 
 def extract_metadata(file: BufferedReader | BytesIO, magicnum: bytes, intsize: int):
+    """
+    Extracts metadata from a cryptbuddy file.
+
+    Parameters
+    ----------
+    file : io.BufferedReader | io.BytesIO
+        The IO object (file) to get metadata from
+    magicnum : bytes
+        The magic bytes (signature) of the file
+    intisize : int
+        The size of the binary integer storing metadata size
+    """
     # verify magic bytes at the beginning of the file
     filesig = file.read(len(magicnum))
     if not filesig == magicnum:
