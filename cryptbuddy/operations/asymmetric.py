@@ -205,6 +205,7 @@ def asymmetric_decrypt(
     # than that used during encryption
     # IT'S NOT POSSIBLE
     if partsize > max_partsize:
+        # skipcq: FLK-E501
         e = ValueError(
             f"{path} requires maximum part size to be greater than or equal to {partsize}"
         )

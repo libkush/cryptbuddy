@@ -173,6 +173,7 @@ def symmetric_decrypt(
     chunks_per_part = partsize // chunksize
 
     if partsize > max_partsize:
+        # skipcq: FLK-E501
         e = ValueError(
             f"{path} requires maximum part size to be greater than or equal to {partsize}"
         )
