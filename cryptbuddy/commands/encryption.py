@@ -167,7 +167,7 @@ def encrypt(
         success("File(s) encrypted.", console=progress.console)
         return progress.stop()
 
-    elif not symmetric and user:
+    if not symmetric and user:
         # for asymmetric encryption, we first generate a random
         # key and use it to encrypt the file symmetrically, then
         # we encrypt the key with the public keys of each of
@@ -301,7 +301,7 @@ def decrypt(
     # for asymmetric decryption, we need the private key
     # the private key is always encrypted with user's password
     # so we need the password to decrypt the private key
-    elif not symmetric and password:
+    if not symmetric and password:
         # usable (decrypted) private key
         private_key = AppPrivateKey.from_file(Path(f"{DATA_DIR}/private.key"), password)
 
