@@ -93,7 +93,7 @@ def symmetric_encrypt(
             err = EncryptionError(
                 f"Failed to encrypt file data for {path.name}"
             ).__cause__ = e
-            return error(err, getattr(progress, "console"))
+            return error(err, getattr(progress, "console", None))
         outfile.write(encrypted)
 
     executor.shutdown()
@@ -149,11 +149,11 @@ def symmetric_decrypt(
         metadata = extract_metadata(infile, MAGICNUM, INTSIZE)
     except ValueError as e:
         err = ValueError(f"{path} was not encrypted using CryptBuddy").__cause__ = e
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     if metadata["type"] != "symmetric":
         err = ValueError(f"{path} is not symmetrically encrypted")
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
     ops = metadata["ops"]
     mem = metadata["mem"]
     salt = metadata["salt"]
@@ -169,11 +169,11 @@ def symmetric_decrypt(
         err = ValueError(
             f"{path} requires maximum part size to be greater than or equal to {partsize}"
         )
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     if not (ops and mem and salt and nonce and chunksize and macsize and keysize):
         err = ValueError(f"{path} is corrupt")
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     key = options.get_key(salt, mem, ops, keysize)
     part_extrabytes = chunks_per_part * macsize
@@ -191,7 +191,7 @@ def symmetric_decrypt(
             err = DecryptionError(
                 f"Failed to decrypt file data for {path.name}"
             ).__cause__ = e
-            return error(err, getattr(progress, "console"))
+            return error(err, getattr(progress, "console", None))
         outfile.write(decrypted)
 
     infile.close()

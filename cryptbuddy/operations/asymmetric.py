@@ -64,7 +64,7 @@ def asymmetric_encrypt(
             err = EncryptionError(
                 f"Failed to encrypt symmetric key for {name}"
             ).__cause__ = e
-            return error(err, getattr(progress, "console"))
+            return error(err, getattr(progress, "console", None))
         encrypted_symkeys[name] = encrypted_symkey
 
     # we need the length of all the parts to be perfectly divisible
@@ -117,7 +117,7 @@ def asymmetric_encrypt(
             err = EncryptionError(
                 f"Failed to encrypt file data for {path.name}"
             ).__cause__ = e
-            return error(err, getattr(progress, "console"))
+            return error(err, getattr(progress, "console", None))
         outfile.write(encrypted)
 
     executor.shutdown()
@@ -174,12 +174,12 @@ def asymmetric_decrypt(
         metadata = extract_metadata(infile, MAGICNUM, INTSIZE)
     except ValueError as e:
         err = ValueError(f"{path} was not encrypted using CryptBuddy").__cause__ = e
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     # verify the metadata is from an asymmetrically encrypted file
     if metadata["type"] != "asymmetric":
         err = ValueError(f"{path} is not asymmetrically encrypted")
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     # get required values from metadata
     encrypted_symkeys: dict[str, bytes] = metadata["encrypted_symkeys"]
@@ -196,11 +196,11 @@ def asymmetric_decrypt(
         err = ValueError(
             f"{path} requires maximum part size to be greater than or equal to {partsize}"
         )
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     if not (encrypted_symkeys and nonce and macsize and chunksize):
         err = ValueError(f"{path} is corrupt")
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     # decrypt the user's private key
     try:
@@ -208,13 +208,13 @@ def asymmetric_decrypt(
     except DecryptionError as e:
         err = DecryptionError(f"Failed to decrypt private key for {options.user}")
         err.__cause__ = e
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     # get the encrypted symmetric key for this user
     mykey = encrypted_symkeys[options.user]
     if not mykey:
         err = ValueError(f"{path} was not encrypted for {options.user}")
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     # decrypt the symmetric key using user's private key
     try:
@@ -223,7 +223,7 @@ def asymmetric_decrypt(
         err = DecryptionError(
             f"Failed to decrypt symmetric key for {options.user} in {path}"
         ).__cause__ = e
-        return error(err, getattr(progress, "console"))
+        return error(err, getattr(progress, "console", None))
 
     # mental gymnastics to reverse the encryption logic
     chunks_per_part = partsize // chunksize
@@ -242,7 +242,7 @@ def asymmetric_decrypt(
             err = DecryptionError(
                 f"Failed to decrypt file data for {path.name}"
             ).__cause__ = e
-            return error(err, getattr(progress, "console"))
+            return error(err, getattr(progress, "console", None))
         outfile.write(decrypted)
 
     infile.close()
