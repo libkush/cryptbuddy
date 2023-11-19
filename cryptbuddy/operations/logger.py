@@ -56,7 +56,7 @@ def info(*msgs: object, console: Console):
     console.print(text)
 
 
-def error(e: Exception, console: Console):
+def error(e: Exception, console: Console | None = None):
     """
     Prints error messages to the console and logs them.
 
@@ -67,6 +67,8 @@ def error(e: Exception, console: Console):
     console : rich.console.Console
         Rich console instance
     """
+    if not console:
+        console = Console()
     error_logger.exception(e, exc_info=True)
     message = str(e)
     text = Text(message, style="bold red")

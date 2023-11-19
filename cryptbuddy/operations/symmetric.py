@@ -93,9 +93,7 @@ def symmetric_encrypt(
             err = EncryptionError(
                 f"Failed to encrypt file data for {path.name}"
             ).__cause__ = e
-            if progress:
-                return error(err, progress.console)
-            return print(e)
+            return error(err, getattr(progress, "console"))
         outfile.write(encrypted)
 
     executor.shutdown()
@@ -150,18 +148,14 @@ def symmetric_decrypt(
     filesig = infile.read(len(MAGICNUM))
     if not filesig == MAGICNUM:
         err = ValueError(f"{path} was not encrypted using CryptBuddy")
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
 
     metasize = int.from_bytes(infile.read(INTSIZE), "big")
     meta = infile.read(metasize)
     metadata = msgpack.unpackb(meta)
     if metadata["type"] != "symmetric":
         err = ValueError(f"{path} is not symmetrically encrypted")
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
     ops = metadata["ops"]
     mem = metadata["mem"]
     salt = metadata["salt"]
@@ -174,18 +168,14 @@ def symmetric_decrypt(
 
     if partsize > max_partsize:
         # skipcq: FLK-E501
-        e = ValueError(
+        err = ValueError(
             f"{path} requires maximum part size to be greater than or equal to {partsize}"
         )
-        if progress:
-            return error(e, progress.console)
-        return print(e)
+        return error(err, getattr(progress, "console"))
 
     if not (ops and mem and salt and nonce and chunksize and macsize and keysize):
         err = ValueError(f"{path} is corrupt")
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
 
     key = options.get_key(salt, mem, ops, keysize)
     part_extrabytes = chunks_per_part * macsize
@@ -203,9 +193,7 @@ def symmetric_decrypt(
             err = DecryptionError(
                 f"Failed to decrypt file data for {path.name}"
             ).__cause__ = e
-            if progress:
-                return error(err, progress.console)
-            return print(err)
+            return error(err, getattr(progress, "console"))
         outfile.write(decrypted)
 
     infile.close()

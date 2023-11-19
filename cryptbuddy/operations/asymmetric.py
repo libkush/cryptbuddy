@@ -64,9 +64,7 @@ def asymmetric_encrypt(
             err = EncryptionError(
                 f"Failed to encrypt symmetric key for {name}"
             ).__cause__ = e
-            if progress:
-                return error(err, progress.console)
-            return print(err)
+            return error(err, getattr(progress, "console"))
         encrypted_symkeys[name] = encrypted_symkey
 
     # we need the length of all the parts to be perfectly divisible
@@ -119,9 +117,7 @@ def asymmetric_encrypt(
             err = EncryptionError(
                 f"Failed to encrypt file data for {path.name}"
             ).__cause__ = e
-            if progress:
-                return error(err, progress.console)
-            return print(err)
+            return error(err, getattr(progress, "console"))
         outfile.write(encrypted)
 
     executor.shutdown()
@@ -178,9 +174,7 @@ def asymmetric_decrypt(
     filesig = infile.read(len(MAGICNUM))
     if not filesig == MAGICNUM:
         err = ValueError(f"{path} was not encrypted using CryptBuddy")
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
 
     # read how big the metadata is
     metasize = int.from_bytes(infile.read(INTSIZE), "big")
@@ -190,9 +184,7 @@ def asymmetric_decrypt(
     # verify the metadata is from an asymmetrically encrypted file
     if metadata["type"] != "asymmetric":
         err = ValueError(f"{path} is not asymmetrically encrypted")
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
 
     # get required values from metadata
     encrypted_symkeys: dict[str, bytes] = metadata["encrypted_symkeys"]
@@ -206,18 +198,14 @@ def asymmetric_decrypt(
     # IT'S NOT POSSIBLE
     if partsize > max_partsize:
         # skipcq: FLK-E501
-        e = ValueError(
+        err = ValueError(
             f"{path} requires maximum part size to be greater than or equal to {partsize}"
         )
-        if progress:
-            return error(e, console=progress.console)
-        return print(e)
+        return error(err, getattr(progress, "console"))
 
     if not (encrypted_symkeys and nonce and macsize and chunksize):
-        e = ValueError(f"{path} is corrupt")
-        if progress:
-            return error(e, progress.console)
-        return print(e)
+        err = ValueError(f"{path} is corrupt")
+        return error(err, getattr(progress, "console"))
 
     # decrypt the user's private key
     try:
@@ -225,17 +213,13 @@ def asymmetric_decrypt(
     except DecryptionError as e:
         err = DecryptionError(f"Failed to decrypt private key for {options.user}")
         err.__cause__ = e
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
 
     # get the encrypted symmetric key for this user
     mykey = encrypted_symkeys[options.user]
     if not mykey:
         err = ValueError(f"{path} was not encrypted for {options.user}")
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
 
     # decrypt the symmetric key using user's private key
     try:
@@ -244,9 +228,7 @@ def asymmetric_decrypt(
         err = DecryptionError(
             f"Failed to decrypt symmetric key for {options.user} in {path}"
         ).__cause__ = e
-        if progress:
-            return error(err, progress.console)
-        return print(err)
+        return error(err, getattr(progress, "console"))
 
     # mental gymnastics to reverse the encryption logic
     chunks_per_part = partsize // chunksize
@@ -265,9 +247,7 @@ def asymmetric_decrypt(
             err = DecryptionError(
                 f"Failed to decrypt file data for {path.name}"
             ).__cause__ = e
-            if progress:
-                return error(err, progress.console)
-            return print(err)
+            return error(err, getattr(progress, "console"))
         outfile.write(decrypted)
 
     infile.close()
