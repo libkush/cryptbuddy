@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "cryptbuddy"
-version = "0.0.5"
-description = ""
+version = "1.0.0"
+description = "An over-engineered multithreaded file encryption CLI program"
 authors = ["Kush Patel <kush@kush.in>"]
-readme = "README.md"
+readme = "README.txt"
 
 [tool.poetry.dependencies]
 python = "^3.9"
