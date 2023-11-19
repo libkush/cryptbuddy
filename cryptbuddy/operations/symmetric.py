@@ -107,6 +107,7 @@ def symmetric_encrypt(
         progress.update(task, visible=False)
 
 
+# skipcq: PY-R1000
 def symmetric_decrypt(
     path: Path,
     options: SymmetricDecryptOptions,

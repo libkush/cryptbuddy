@@ -132,6 +132,7 @@ def asymmetric_encrypt(
         progress.update(task, visible=False)
 
 
+# skipcq: PY-R1000
 def asymmetric_decrypt(
     path: Path,
     options: AsymmetricDecryptOptions,
