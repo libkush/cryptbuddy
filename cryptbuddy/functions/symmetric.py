@@ -1,203 +1,163 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List
+from concurrent.futures import ThreadPoolExecutor
+from typing import Tuple
 
 from nacl.bindings import sodium_increment
 from nacl.secret import SecretBox
-from rich.progress import TaskID
 
 from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
-from cryptbuddy.structs.types import ProgressState
 
 
-def encrypt_chunk(
-    index: int, chunk: bytes, box: SecretBox, nonce: bytes, macsize: int
-) -> bytes:
+def encrypt_chunk(args: Tuple[bytes, SecretBox, bytes]) -> bytes:
     """
-    Encrypts the given chunk using the provided key and nonce.
+    Encrypts a chunk using the provided key and nonce.
 
-    ### Parameters
-    - `index` (`int`): The index of the chunk.
-    - `chunk` (`bytes`): The chunk to be encrypted.
-    - `box` (`SecretBox`): The encryption box.
-    - `nonce` (`bytes`): The nonce to be used for encryption.
-    - `macsize` (`int`): The size of the authentication MAC tag in bytes.
+    Parameters
+    ----------
+    args : Tuple[bytes, SecretBox, bytes]
+        A tuple containing the chunk with SecretBox and nonce
 
-    ### Returns
-    `bytes`: The encrypted chunk.
-
-    ### Raises
-    - `EncryptionError`: If an error occurs during encryption.
-
+    Returns
+    -------
+    bytes
+        The encrypted chunk.
     """
-    try:
-        outchunk = box.encrypt(chunk, nonce).ciphertext
-    except Exception as e:
-        err = EncryptionError("Error encrypting chunk")
-        err.__cause__ = e
-        return index, err
-    if not len(outchunk) == len(chunk) + macsize:
-        return index, EncryptionError("Error encrypting chunk")
-    return index, outchunk
+    chunk, box, nonce = args
+    return box.encrypt(chunk, nonce).ciphertext
 
 
 def encrypt_data(
+    executor: ThreadPoolExecutor,
     data: bytes,
     key: bytes,
     nonce: bytes,
     chunksize: int,
     macsize: int,
-    progress: ProgressState | None = None,
-    task: TaskID | None = None,
-) -> List[bytes]:
+) -> Tuple[bytes, bytes]:
     """
-    Encrypts the given data using the provided key and nonce.
+    Encrypts data using the provided key and nonce.
 
-    ### Parameters
-    - `data` (`bytes`): The data to be encrypted.
-    - `key` (`bytes`): The encryption key.
-    - `nonce` (`bytes`): The nonce to be used for encryption.
-    - `chunksize` (`int`): The size of each chunk to be encrypted.
-    - `macsize` (`int`): The size of the message authentication code.
-    - `progress` (`ProgressState`): The shared progress state object.
-    - `task` (`TaskID`): The task ID of the current task.
+    Parameters
+    ----------
+    data : bytes
+        The data to be encrypted.
+    key : bytes
+        The encryption key.
+    nonce : bytes
+        The nonce to be used for encryption.
+    chunksize : int
+        The size of each chunk to be encrypted.
+    macsize : int
+        The size of the message authentication code.
 
-    ### Returns
-    `List[bytes]`: A list of encrypted chunks.
-
-    ### Raises
-    - `EncryptionError`: If an error occurs during encryption.
-
+    Returns
+    -------
+    bytes
+        Encrypted data.
+    bytes
+        Incremented nonce value after the last chunk
     """
+    # we will create a list of arguments to provide to the
+    # encrypt_chunk() function by dividing the data into chunks
+    # and incrementing the nonce value for each chunk to avoid
+    # repetition of nonce
     box = SecretBox(key)
-    chunks = [data[i : i + chunksize] for i in range(0, len(data), chunksize)]
-    # create a list of the same length as the number of chunks
-    out = [None] * len(chunks)
-    total = len(chunks)
-    # set the progress to the total number of chunks
-    if progress:
-        progress.update(task, total=total)
+    args = []
+    total = len(data)
+    i = 0
+    while i < total:
+        chunk = data[i : i + chunksize]
+        nonce = sodium_increment(nonce)
+        args.append((chunk, box, nonce))
+        i += chunksize
 
-    with ThreadPoolExecutor() as executor:
-        # process each chunk concurrently and store the future objects
-        futures = [
-            executor.submit(encrypt_chunk, i, chunk, box, nonce, macsize)
-            # enumerate the chunks to get the index
-            for i, chunk in enumerate(chunks)
-        ]
+    # the thread pool will encrypt each chunk in parallel
+    out = b"".join(executor.map(encrypt_chunk, args))
 
-        for future in as_completed(futures):
-            try:
-                # get the index and encrypted chunk
-                i, outchunk = future.result()
+    # the output of each chunk has mac bytes for authentication
+    # hence the expected size is number of args times
+    # chunksize + macsize
+    # however if data is present in a single chunk, the
+    # size is length of data + macsize
+    expected_outsize = (
+        (chunksize + macsize) * len(args) if (len(args) > 1) else total + macsize
+    )
+    if not len(out) == expected_outsize:
+        raise EncryptionError("Error encrypting given data")
 
-                # if the result is an error, raise it
-                if isinstance(outchunk, EncryptionError):
-                    raise outchunk
-
-                # otherwise, store the encrypted chunk
-                out[i] = outchunk
-                nonce = sodium_increment(nonce)
-
-            except Exception as e:
-                raise e
-
-            if progress:
-                progress.increment(task)
-    return out
+    # since this function is meant to be called from
+    # symmetric_encrypt() function, we need to return the
+    # incremented nonce value after the last chunk
+    nextnonce = sodium_increment(nonce)
+    return out, nextnonce
 
 
-def decrypt_chunk(
-    index: int, chunk: bytes, box: SecretBox, nonce: bytes, macsize: int
-) -> bytes:
+def decrypt_chunk(args: Tuple[bytes, SecretBox, bytes]) -> bytes:
     """
     Decrypts the given chunk using the provided key and nonce.
 
-    ## Parameters
-    - `index` (`int`): The index of the chunk.
-    - `chunk` (`bytes`): The chunk to be decrypted.
-    - `box` (`SecretBox`): The decryption box.
-    - `nonce` (`bytes`): The nonce to be used for decryption.
-    - `macsize` (`int`): The size of the authentication MAC tag in bytes.
+    Parameters
+    ----------
+    args : Tuple[bytes, SecretBox, bytes]
+        A tuple containing the chunk with SecretBox and nonce
 
-    ## Returns
-    `bytes`: The decrypted chunk.
-
-    ## Raises
-    - `DecryptionError`: If an error occurs during decryption.
-
+    Returns
+    -------
+    bytes
+        The decrypted chunk.
     """
-    try:
-        outchunk = box.decrypt(chunk, nonce)
-    except Exception as e:
-        err = DecryptionError("Error decrypting chunk")
-        err.__cause__ = e
-        return index, err
-
-    if not len(outchunk) == len(chunk) - macsize:
-        return index, DecryptionError("Error decrypting chunk")
-    return index, outchunk
+    chunk, box, nonce = args
+    return box.decrypt(chunk, nonce)
 
 
 def decrypt_data(
+    executor: ThreadPoolExecutor,
     data: bytes,
-    chunksize: int,
     key: bytes,
     nonce: bytes,
+    chunksize: int,
     macsize: int,
-    progress: ProgressState | None = None,
-    task: TaskID | None = None,
-) -> List[bytes]:
+) -> Tuple[bytes, bytes]:
     """
     Decrypts the given data using the provided key and nonce.
 
-    ## Parameters
-    - `data` (`bytes`): The data to be decrypted.
-    - `chunksize` (`int`): The size of each chunk to be decrypted.
-    - `key` (`bytes`): The decryption key.
-    - `nonce` (`bytes`): The nonce to be used for decryption.
-    - `macsize` (`int`): The size of the message authentication code.
-    - `progress` (`ProgressState`): The shared progress state object.
-    - `task` (`TaskID`): The task ID of the current task.
+    Parameters
+    ----------
+    data : bytes
+        The data to be decrypted.
+    key : bytes
+        The decryption key.
+    nonce : bytes
+        The nonce to be used for decryption.
+    chunksize : int
+        The size of each chunk to be decrypted.
+    macsize : int
+        The size of the message authentication code.
 
-    ## Returns
-    `List[bytes]`: A list of decrypted chunks.
-
-    ## Raises
-    - `DecryptionError`: If an error occurs during decryption.
-
+    Returns
+    -------
+    bytes
+        Decrypted data.
+    bytes
+        Incremented nonce value after the last chunk
     """
+    # same logic to create a list of arguments as above
     box = SecretBox(key)
+    args = []
+    total = len(data)
+    i = 0
+    while i < total:
+        chunk = data[i : i + chunksize + macsize]
+        nonce = sodium_increment(nonce)
+        args.append((chunk, box, nonce))
+        i += chunksize + macsize
+    out = b"".join(executor.map(decrypt_chunk, args))
 
-    # the chunksize is the size of the chunk plus the size of the mac
-    chunks = [
-        data[i : i + chunksize + macsize]
-        for i in range(0, len(data), chunksize + macsize)
-    ]
-    # create a list of the same length as the number of chunks
-    out = [None] * len(chunks)
+    # the outsize here is just the chunksize times total chunks
+    # but if there's just one chunk, it will be the size of
+    # encrypted data minus the macsize
+    expected_outsize = chunksize * len(args) if (len(args) > 1) else total - macsize
+    if not len(out) == expected_outsize:
+        raise DecryptionError("Error decrypting given data")
 
-    total = len(chunks)
-    if progress:
-        progress.update(task, total=total)
-
-    # process each chunk concurrently and store the future objects
-    executor = ThreadPoolExecutor()
-    futures = [
-        executor.submit(decrypt_chunk, i, chunk, box, nonce, macsize)
-        # enumerate the chunks to get the index
-        for i, chunk in enumerate(chunks)
-    ]
-
-    for future in as_completed(futures):
-        try:
-            # get the index and decrypted chunk
-            i, outchunk = future.result()
-            if isinstance(outchunk, DecryptionError):
-                raise outchunk
-            out[i] = outchunk
-            nonce = sodium_increment(nonce)
-        except Exception as e:
-            raise e
-        if progress:
-            progress.increment(task)
-    return out
+    nextnonce = sodium_increment(nonce)
+    return out, nextnonce

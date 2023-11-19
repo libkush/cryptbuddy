@@ -4,12 +4,11 @@ from typing import List, Optional
 
 import typer
 from nacl.utils import random
-from rich.progress import BarColumn, Progress, TimeElapsedColumn, TimeRemainingColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated
 
 from cryptbuddy.config import (
     CHUNKSIZE,
-    CPUS,
     DATA_DIR,
     KEYSIZE,
     MACSIZE,
@@ -19,9 +18,8 @@ from cryptbuddy.config import (
     SALTBYTES,
     SHRED,
 )
-from cryptbuddy.functions.file_io import get_decrypted_outfile, get_encrypted_outfile
+from cryptbuddy.functions.file_ops import get_decrypted_outfile, get_encrypted_outfile
 from cryptbuddy.operations.asymmetric import asymmetric_decrypt, asymmetric_encrypt
-from cryptbuddy.operations.concurrent_tasks import run
 from cryptbuddy.operations.logger import error, success
 from cryptbuddy.operations.symmetric import symmetric_decrypt, symmetric_encrypt
 from cryptbuddy.structs.app_keys import AppPrivateKey
@@ -41,8 +39,9 @@ def encrypt(
             exists=True,
             readable=True,
             writable=True,
+            file_okay=True,
             resolve_path=True,
-            help="Paths of the file(s) and folder(s) to encrypt",
+            help="Paths of the file(s) to encrypt",
         ),
     ],
     symmetric: Annotated[
@@ -115,17 +114,9 @@ def encrypt(
             help="Whether to shred the original file after encryption",
         ),
     ] = SHRED,
-    cpus: Annotated[
-        int,
-        typer.Option(
-            "--cpus",
-            "-t",
-            help="Number of CPUs to use for encryption",
-        ),
-    ] = CPUS,
 ):
     """
-    Encrypt file(s) or folder(s) using a password or public keys of one or more
+    Encrypt file(s) using a password or public keys of one or more
     users from your keychain
     """
     # symmetric encryption requires a password to generate a key
@@ -136,17 +127,19 @@ def encrypt(
             "Password to encrypt the file", hide_input=True, confirmation_prompt=True
         )
 
-    # we cannot pass arguments in the form of bytes, hence we use
+    # we can't pass arguments in the form of bytes, hence we use
     # base64 encoded strings
     bnonce = base64.b64decode(nonce)
     bsalt = base64.b64decode(salt)
 
     progress = Progress(
-        "[progress.description]{task.description}",
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.0f}%",
-        TimeRemainingColumn(),
-        TimeElapsedColumn(),
+        TextColumn("{task.description}"),
+        SpinnerColumn(spinner_name="point", finished_text="done"),
+        transient=True,
+    )
+    progress.start()
+    overall_progress_task = progress.add_task(
+        "[green]Encrypting files:", total=len(paths)
     )
 
     if symmetric and password:
@@ -161,42 +154,38 @@ def encrypt(
             chunksize=chunksize,
             shred=shred,
         )
+        for path in paths:
+            out_path = get_encrypted_outfile(path, output)
+            symmetric_encrypt(
+                path,
+                options,
+                out_path,
+                max_partsize=300 * 1024 * 1024,
+                progress=progress,
+            )
+            progress.advance(overall_progress_task)
+        success("File(s) encrypted.", console=progress.console)
+        return progress.stop()
 
-        # we can concurrently handle multiple paths using multiprocessing (cpus)
-        run(
-            progress=progress,
-            paths=paths,
-            op_type="encrypt",
-            file_getter=get_encrypted_outfile,
-            op_func=symmetric_encrypt,
-            options=options,
-            output=output,
-            cpus=cpus,
-        )
-
-        success("File(s) encrypted.")
-        return None
-
-    if not symmetric and user:
-        # for asymmetric encryption, we first generate a symmetric key
-        # and encrypt it with the public keys of each of the recipents
-        # the file is then encrypted symmetrically using the symmetric key
-        # and the encrypted symmetric key is prepended to the file in
+    elif not symmetric and user:
+        # for asymmetric encryption, we first generate a random
+        # key and use it to encrypt the file symmetrically, then
+        # we encrypt the key with the public keys of each of
+        # the recipents
+        #
+        # the encrypted symmetric key is prepended to the file in
         # the form of a header (metadata)
-
+        #
         # public keys -> asymmetrically encrypt symmetric key
         # symmetric key -> symmetrically encrypts file data
-
-        symkey = random(KEYSIZE)  # this is the symmetric key
-
+        symkey = random(KEYSIZE)  # this is the generated key
         keychain = Keychain()
         public_keys = []
         for u in user:
             try:
                 public_keys.append(keychain.get_key(u))
             except Exception as e:
-                error(e)
-                return None
+                return error(e, console=progress.console)
 
         options = AsymmetricEncryptOptions(
             keysize=KEYSIZE,
@@ -210,23 +199,16 @@ def encrypt(
             chunksize=chunksize,
             shred=shred,
         )
-
-        run(
-            progress=progress,
-            paths=paths,
-            op_type="encrypt",
-            file_getter=get_encrypted_outfile,
-            op_func=asymmetric_encrypt,
-            options=options,
-            output=output,
-            cpus=cpus,
-        )
-
-        success("File(s) encrypted.")
-        return None
-
-    error("Please specify either symmetric (with password) or users for encryption")
-    return None
+        for path in paths:
+            out_path = get_encrypted_outfile(path, output)
+            asymmetric_encrypt(path, options, out_path, max_partsize=300 * 1024 * 1024)
+            progress.advance(overall_progress_task)
+        success("File(s) encrypted.", console=progress.console)
+        return progress.stop()
+    e = ValueError(
+        "Please specify either symmetric (with password) or users for encryption"
+    )
+    error(e, console=progress.console)
 
 
 def decrypt(
@@ -237,7 +219,7 @@ def decrypt(
             readable=True,
             writable=True,
             resolve_path=True,
-            help="Paths of the file(s) and folder(s) to decrypt",
+            help="Paths of the file(s) to decrypt",
         ),
     ],
     password: Annotated[
@@ -280,25 +262,21 @@ def decrypt(
             help="Output directory to store the decrypted file(s)",
         ),
     ] = None,
-    cpus: Annotated[
-        int,
-        typer.Option(
-            "--cpus",
-            "-t",
-            help="Number of CPUs to use for decryption",
-        ),
-    ] = CPUS,
 ):
     """
-    Decrypt file(s) or folder(s) symmetrically using a password or
+    Decrypt file(s) symmetrically using a password or
     asymmetrically using your private key
     """
+
     progress = Progress(
-        "[progress.description]{task.description}",
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.0f}%",
-        TimeRemainingColumn(),
-        TimeElapsedColumn(),
+        TextColumn("{task.description}"),
+        SpinnerColumn(spinner_name="point", finished_text="done"),
+        transient=True,
+    )
+    progress.start()
+    overall_progress_task = progress.add_task(
+        "[green]Decrypting files:",
+        total=len(paths),
     )
 
     # password is required to generate the key in symmetric decryption
@@ -307,25 +285,24 @@ def decrypt(
             password=password,
             shred=shred,
         )
-
-        run(
-            progress=progress,
-            paths=paths,
-            op_type="decrypt",
-            file_getter=get_decrypted_outfile,
-            op_func=symmetric_decrypt,
-            options=options,
-            output=output,
-            cpus=cpus,
-        )
-
-        success("File(s) decrypted.")
+        for path in paths:
+            out_path = get_decrypted_outfile(path, output)
+            symmetric_decrypt(
+                path,
+                options,
+                out_path,
+                max_partsize=300 * 1024 * 1024,
+                progress=progress,
+            )
+            progress.advance(overall_progress_task)
+        success("File(s) decrypted.", console=progress.console)
+        return progress.stop()
 
     # for asymmetric decryption, we need the private key
-    # the private key is always encrypted with a password
+    # the private key is always encrypted with user's password
     # so we need the password to decrypt the private key
     elif not symmetric and password:
-        # usable private key
+        # usable (decrypted) private key
         private_key = AppPrivateKey.from_file(Path(f"{DATA_DIR}/private.key"), password)
 
         options = AsymmetricDecryptOptions(
@@ -334,16 +311,15 @@ def decrypt(
             private_key=private_key,
             shred=shred,
         )
-
-        run(
-            progress=progress,
-            paths=paths,
-            op_type="decrypt",
-            file_getter=get_decrypted_outfile,
-            op_func=asymmetric_decrypt,
-            options=options,
-            output=output,
-            cpus=cpus,
-        )
-
-        success("File(s) decrypted.")
+        for path in paths:
+            out_path = get_decrypted_outfile(path, output)
+            asymmetric_decrypt(
+                path,
+                options,
+                out_path,
+                max_partsize=300 * 1024 * 1024,
+                progress=progress,
+            )
+            progress.advance(overall_progress_task)
+        success("File(s) decrypted.", console=progress.console)
+        return progress.stop()

@@ -5,17 +5,23 @@ from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
 
 def encrypt(public_key: PublicKey, message: bytes) -> bytes:
     """
-    Encrypts a message with a public key.
+    Encrypts a message asymmetrically with a public key.
 
-    ### Parameters
-    - `public_key` (`PublicKey`): The public key to encrypt the message with.
-    - `message` (`bytes`): The message to be encrypted.
+    Parameters
+    ----------
+    public_key : nacl.public.PublicKey
+        The public key to encrypt the message with.
+    message : bytes
+        The message to be encrypted.
 
-    ### Returns
-    `bytes`: The encrypted message.
+    Returns
+    -------
+    bytes
+        The encrypted message.
 
-    ### Raises
-    - `EncryptionError`: If an error occurs during encryption.
+    See Also
+    --------
+    decrypt : Decrypts a message asymmetrically with a private key.
     """
     try:
         sealed_box = SealedBox(public_key)
@@ -27,17 +33,23 @@ def encrypt(public_key: PublicKey, message: bytes) -> bytes:
 
 def decrypt(private_key: PrivateKey, encrypted: bytes) -> bytes:
     """
-    Decrypts a message with a private key.
+    Decrypts a message asymmetrically with a private key.
 
-    ### Parameters
-    - `private_key` (`PrivateKey`): The private key to decrypt the message with.
-    - `encrypted` (`bytes`): The encrypted message.
+    Parameters
+    ----------
+    private_key : nacl.public.PrivateKey
+        The private key to decrypt the message with.
+    encrypted : bytes
+        The encrypted message.
 
-    ### Returns
-    `bytes`: The decrypted message.
+    Returns
+    -------
+    bytes
+        The decrypted message.
 
-    ### Raises
-    - `DecryptionError`: If an error occurs during decryption.
+    See Also
+    --------
+    encrypt : Encrypts a message asymmetrically with a public key.
     """
     try:
         sealed_box = SealedBox(private_key)

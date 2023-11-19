@@ -1,33 +1,36 @@
+import io
 from pathlib import Path
 
+import msgpack
 from nacl.public import PrivateKey, PublicKey
 from nacl.pwhash.argon2i import kdf
+from nacl.secret import SecretBox
 from nacl.utils import random
 
 from cryptbuddy.constants import (
     CHUNKSIZE,
-    DELIMITER,
-    ESCAPE_SEQUENCE,
+    INTSIZE,
     KEYSIZE,
     MACSIZE,
+    MAGICNUM,
     MEM,
     NONCESIZE,
     OPS,
     SALTBYTES,
 )
-from cryptbuddy.functions.file_data import add_meta, divide_in_chunks, parse_data
-from cryptbuddy.functions.file_io import write_bytes, write_chunks
-from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
-from cryptbuddy.structs.exceptions import DecryptionError
+from cryptbuddy.functions.symmetric import decrypt_chunk, encrypt_chunk
 
 
 class KeyMeta:
     """
     Metadata for a key.
 
-    ### Parameters
-    - `name` (`str`): The name of the user.
-    - `email` (`str`): The email of the user.
+    Parameters
+    ----------
+    name : str
+        The name of the user.
+    email : str
+        The email of the user.
     """
 
     def __init__(self, name: str, email: str):
@@ -53,29 +56,43 @@ class AppPrivateKey(BaseKey):
     """
     A private key for the application.
 
-    ### Parameters
-    - `key` (`PrivateKey`): The private key.
-    - `password` (`str`): The password to encrypt the key with.
-    - `name` (`str`): The name of the user.
-    - `email` (`str`): The email of the user.
+    Parameters
+    ----------
+    key : nacl.public.PrivateKey
+        The private key.
+    password : str
+        The password to encrypt the key with.
+    name : str
+        The name of the user.
+    email : str
+        The email of the user.
 
-    ### Attributes
-    - `data` (`bytes`): The encrypted key data.
-    - `meta` (`KeyMeta`): The metadata of the encrypted key.
+    Attributes
+    ----------
+    data : bytes
+        The encrypted key data.
+    meta : KeyMeta
+        The metadata of the encrypted key.
 
-    ### Methods
-    - `save(path: Path)`: Save the key to a file.
-    - `decrypt_key(data: bytes, password: str)`: Decrypt an
-        AppPrivateKey's data.
-    - `decrypted_key(password: str)`: Return a decrypted
+    Methods
+    -------
+    save(path: pathlib.Path)
+        Save the key to a file.
+    decrypt_key(data: bytes, password: str)
+        Decrypt an AppPrivateKey's data.
+    decrypted_key(password: str)
+        Return a decrypted
         AppPrivateKey instance.
-    - `from_data(data: bytes, password: str)`: Create an AppPrivateKey
+    from_data(data: bytes, password: str)
+        Create an AppPrivateKey
         instance from encrypted data.
-    - `from_file(path: Path, password: str)`: Create an AppPrivateKey
+    from_file(path: pathlib.Path, password: str)
+        Create an AppPrivateKey
         instance from a private key file.
 
 
-    ### Example
+    Example
+    -------
     ```py
     from cryptbuddy.structs.app_keys import AppPrivateKey
     from cryptbuddy.functions.file_io import write_bytes
@@ -89,10 +106,6 @@ class AppPrivateKey(BaseKey):
     )
     key.save("key.cryptbuddy")
     ```
-
-    ### Notes
-    - The key is symmetrically encrypted using the password.
-
     """
 
     def __init__(self, key: PrivateKey, password: str, *args, **kwargs):
@@ -111,6 +124,12 @@ class AppPrivateKey(BaseKey):
             "name": self.meta.name,
             "email": self.meta.email,
         }
+        meta: bytes = msgpack.packb(metadata)  # type: ignore
+        metasize = len(meta).to_bytes(
+            INTSIZE,
+            "big",
+        )
+        data = MAGICNUM + metasize + meta
         symkey = kdf(
             self.meta.keysize,
             password.encode(),
@@ -118,15 +137,10 @@ class AppPrivateKey(BaseKey):
             self.meta.ops,
             self.meta.mem,
         )
-        encrypted_data = encrypt_data(
-            key.encode(),
-            symkey,
-            nonce,
-            self.meta.chunksize,
-            self.meta.macsize,
-        )
-        data = add_meta(metadata, encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
-        self.data = b"".join(data)
+        secret_box = SecretBox(symkey)
+        encrypted_data = encrypt_chunk((key.encode(), secret_box, nonce))
+        data += encrypted_data
+        self.data = data
 
     def __repr__(self):
         return f"<PrivateKey {self.meta.name} {self.meta.email}>"
@@ -138,86 +152,91 @@ class AppPrivateKey(BaseKey):
         """
         Save the key to a file.
 
-        ### Parameters
-        - `path` (`Path`): The path to save the key to.
-
-        ### Raises
-        - `FileExistsError`: If the file already exists.
+        Parameters
+        ----------
+        path : pathlib.Path
+            The path to save the key to.
         """
         if path.exists():
             raise FileExistsError("File already exists")
-        write_bytes(self.data, path)
+        path.write_bytes(self.data)
 
     @classmethod
     def decrypt_key(cls, data: bytes, password: str):
         """
         Decrypt an instance of `AppPrivateKey`.
 
-        ### Parameters
-        - `data` (`bytes`): The encrypted key data.
-        - `password` (`str`): The password to decrypt the key with.
+        Parameters
+        ----------
+        data : bytes
+            The encrypted key data.
+        password : str
+            The password to decrypt the key with.
 
-        ### Returns
-        - `PrivateKey`: The decrypted private key.
-        - `dict`: The metadata of the key.
-
-        ### Raises
-        - `DecryptionError`: If the key could not be decrypted.
-        - `ValueError`: If the key type is invalid.
+        Returns
+        -------
+        nacl.public.PrivateKey
+            The decrypted private key.
+        dict
+            The metadata of the key.
         """
-        meta, data = parse_data(data, DELIMITER, ESCAPE_SEQUENCE)
-        if not meta["type"] == "CB_PRI_KEY":
+        dataIO = io.BytesIO(data)
+        sig = dataIO.read(len(MAGICNUM))
+        if not sig == MAGICNUM:
+            raise ValueError("The key was not recognised")
+        metasize = int.from_bytes(dataIO.read(INTSIZE), "big")
+        meta = dataIO.read(metasize)
+        metadata = msgpack.unpackb(meta)
+        if not metadata["type"] == "CB_PRI_KEY":
             raise ValueError("Invalid key type")
         symkey = kdf(
-            size=meta["keysize"],
+            size=metadata["keysize"],
             password=password.encode(),
-            salt=meta["salt"],
-            opslimit=meta["ops"],
-            memlimit=meta["mem"],
+            salt=metadata["salt"],
+            opslimit=metadata["ops"],
+            memlimit=metadata["mem"],
         )
-        try:
-            decrypted_data = b"".join(
-                decrypt_data(
-                    data, meta["chunksize"], symkey, meta["nonce"], meta["macsize"]
-                )
-            )
-        except DecryptionError as e:
-            raise DecryptionError("Could not decrypt key") from e
+        secret_box = SecretBox(symkey)
+        ciphertext = dataIO.read()
+        decrypted_data = decrypt_chunk((ciphertext, secret_box, metadata["nonce"]))
         private_key = PrivateKey(decrypted_data)
-        return private_key, meta
+        return private_key, metadata
 
     def decrypted_key(self, password: str) -> PrivateKey:
         """
         Get decrypted key.
 
-        ### Parameters
-        - `password` (`str`): The password to decrypt the key with.
+        Parameters
+        ----------
+        password : str
+            The password to decrypt the key with.
 
-        ### Returns
-        - `PrivateKey`: The decrypted private key.
-
-        ### Raises
-        - `DecryptionError`: If the key could not be decrypted.
+        Returns
+        -------
+        PrivateKey
+            The decrypted private key.
         """
         private_key, _meta = self.decrypt_key(self.data, password)
         return private_key
 
     @classmethod
-    def from_data(cls, packed: bytes, password: str) -> "AppPrivateKey":
+    def from_data(cls, data: bytes, password: str) -> "AppPrivateKey":
         """
         Create an instance of `AppPrivateKey` from encrypted data.
 
-        ### Parameters
-        - `packed` (`bytes`): The encrypted key data.
-        - `password` (`str`): The password to decrypt the key with.
+        Parameters
+        ----------
+        packed : bytes
+            The encrypted key data.
+        password : str
+            The password to decrypt the key with.
 
-        ### Returns
-        - `AppPrivateKey`: The decrypted private key.
-
-        ### Raises
-        - `DecryptionError`: If the key could not be decrypted.
+        Returns
+        -------
+        AppPrivateKey
+            The decrypted private key.
         """
-        decrypted_key, meta = cls.decrypt_key(packed, password)
+        decrypted_key, meta = cls.decrypt_key(data, password)
         return AppPrivateKey(
             decrypted_key, password, name=meta["name"], email=meta["email"]
         )
@@ -227,16 +246,17 @@ class AppPrivateKey(BaseKey):
         """
         Create an instance of `AppPrivateKey` from a file.
 
-        ### Parameters
-        - `file` (`Path`): The path to the encrypted key file.
-        - `password` (`str`): The password to decrypt the key with.
+        Parameters
+        ----------
+        file : pathlib.Path
+            The path to the encrypted key file.
+        password : str
+            The password to decrypt the key with.
 
-        ### Returns
-        - `AppPrivateKey`: The decrypted private key.
-
-        ### Raises
-        - `FileNotFoundError`: If the file does not exist.
-        - `DecryptionError`: If the key could not be decrypted.
+        Returns
+        -------
+        AppPrivateKey
+            The decrypted private key.
         """
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")
@@ -248,31 +268,37 @@ class AppPublicKey(BaseKey):
     """
     Create an instance of `AppPublicKey`.
 
-    ### Parameters
-    - `key` (`PublicKey`): The public key to encrypt.
-    - `name` (`str`): The name of the key owner.
-    - `email` (`str`): The email of the key owner.
+    Parameters
+    ----------
+    key : nacl.public.PublicKey
+        The public key to encrypt.
+    name : str
+        The name of the key owner.
+    email : str
+        The email of the key owner.
 
-    ### Attributes
-    - 'key' (`PublicKey`): The public key.
-    - `data` (`List[bytes]`): The encrypted key data.
-    - `meta` (`AppKeyMeta`): The metadata of the key.
-    - `packed` (`bytes`): The packed key data.
+    Attributes
+    ----------
+    key : nacl.public.PublicKey
+        The public key.
+    data : List[bytes]
+        The encrypted key data.
+    meta : AppKeyMeta
+        The metadata of the key.
+    packed : bytes
+        The packed key data.
 
-    ### Methods
-    - `save(path: Path)`: Save the key to a file.
-    - `from_data(packed: bytes)`: Create an instance
-        of `AppPublicKey` from packed data.
-    - `from_file(file: Path)`: Create an instance of
-        `AppPublicKey` from a file.
+    Methods
+    -------
+    save(path: pathlib.Path)
+        Save the key to a file.
+    from_data(packed: bytes)
+        Create an instance of `AppPublicKey` from packed data.
+    from_file(file: pathlib.Path)
+        Create an instance of `AppPublicKey` from a file.
 
-    ### Raises
-    - `ValueError`: If the key is not a `PublicKey` instance.
-
-    ### Notes
-    - The key is not encrypted, but metadata is added to the key data.
-
-    ### Example
+    Example
+    -------
     ```python
     from pathlib import Path
     from cryptbuddy.utils.app_keys import AppPublicKey, PublicKey
@@ -286,6 +312,7 @@ class AppPublicKey(BaseKey):
         email="john@example.com"
     )
     app_public_key.save(Path("public_key.cryptbuddy"))
+    ```
     """
 
     def __init__(self, key: PublicKey, *args, **kwargs):
@@ -295,11 +322,13 @@ class AppPublicKey(BaseKey):
             "name": self.meta.name,
             "email": self.meta.email,
         }
-        data = divide_in_chunks(key.encode(), self.meta.chunksize)
-        key_data = add_meta(metadata, data, DELIMITER, ESCAPE_SEQUENCE)
         self.key = key
-        self.data = key_data
-        self.packed = b"".join(key_data)
+        meta: bytes = msgpack.packb(metadata)  # type: ignore
+        metasize = len(meta).to_bytes(
+            INTSIZE,
+            "big",
+        )
+        self.data = MAGICNUM + metasize + meta + key.encode()
 
     def __repr__(self):
         return f"<PublicKey {self.meta.name} {self.meta.email}>"
@@ -307,56 +336,60 @@ class AppPublicKey(BaseKey):
     def __str__(self):
         return f"<PublicKey {self.meta.name} {self.meta.email}>"
 
-    def save(self, file: Path) -> None:
+    def save(self, path: Path) -> None:
         """
         Save the key to a file.
 
-        ### Parameters
-        - `file` (`Path`): The path to save the key to.
-
-        ### Raises
-        - `FileExistsError`: If the file already exists.
+        Parameters
+        ----------
+        file : pathlib.Path
+            The path to save the key to.
         """
-        if file.exists():
+        if path.exists():
             raise FileExistsError("File already exists")
-        write_chunks(self.data, file)
+        path.write_bytes(self.data)
 
     @classmethod
-    def from_data(cls, packed: bytes) -> "AppPublicKey":
+    def from_data(cls, data: bytes) -> "AppPublicKey":
         """
         Create an instance of `AppPublicKey` from packeddata.
 
-        ### Parameters
-        - `packed` (`bytes`): The packed key data.
+        Parameters
+        ----------
+        packed : bytes
+            The packed key data.
 
-        ### Returns
-        - `AppPublicKey`: The public key.
-
-        ### Raises
-        - `ValueError`: If the key is not a `PublicKey` instance.
+        Returns
+        -------
+        AppPublicKey
+            The public key.
         """
-        meta, data = parse_data(packed, DELIMITER, ESCAPE_SEQUENCE)
-        if meta["type"] != "CB_PUB_KEY":
+        dataIO = io.BytesIO(data)
+        sig = dataIO.read(len(MAGICNUM))
+        if not sig == MAGICNUM:
+            raise ValueError("The key was not recognised")
+        metasize = int.from_bytes(dataIO.read(INTSIZE), "big")
+        meta = dataIO.read(metasize)
+        metadata = msgpack.unpackb(meta)
+        if metadata["type"] != "CB_PUB_KEY":
             raise ValueError("Invalid key type")
-        public_key = PublicKey(data)
-        return AppPublicKey(public_key, meta["name"], meta["email"])
+        public_key = PublicKey(dataIO.read())
+        return AppPublicKey(public_key, metadata["name"], metadata["email"])
 
     @classmethod
     def from_file(cls, file: Path) -> "AppPublicKey":
         """
         Create an instance of `AppPublicKey` from a file.
 
-        ### Parameters
-        - `file` (`Path`): The path to the key file.
+        Parameters
+        ----------
+        file : pathlib.Path
+            The path to the key file.
 
-        ### Returns
-        - `AppPublicKey`: The public key.
-
-        ### Raises
-        - `FileNotFoundError`: If the file does not exist.
-
-        ### Notes
-        - The key is not encrypted, but metadata is added to the key data.
+        Returns
+        -------
+        AppPublicKey
+            The public key.
         """
         if not (file.exists() or file.is_file()):
             raise FileNotFoundError("File does not exist")

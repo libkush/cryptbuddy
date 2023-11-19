@@ -1,16 +1,12 @@
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from rich.progress import TaskID
+import msgpack
+from rich.progress import Progress
 
-from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
+from cryptbuddy.constants import INTSIZE, MAGICNUM
 from cryptbuddy.functions.asymmetric import decrypt, encrypt
-from cryptbuddy.functions.file_data import add_meta, parse_data
-from cryptbuddy.functions.file_io import (
-    shred,
-    tar_directory,
-    untar_directory,
-    write_chunks,
-)
+from cryptbuddy.functions.file_ops import shred
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
 from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
@@ -18,154 +14,227 @@ from cryptbuddy.structs.options import (
     AsymmetricDecryptOptions,
     AsymmetricEncryptOptions,
 )
-from cryptbuddy.structs.types import ProgressState
 
 
 def asymmetric_encrypt(
     path: Path,
     options: AsymmetricEncryptOptions,
     output: Path,
-    progress: ProgressState | None = None,
-    task: TaskID | None = None,
+    max_partsize: int,
+    progress: Progress | None = None,
 ) -> None:
     """
-    Encrypts the given file or folder asymmetrically.
+    Encrypts a file asymmetrically.
 
-    ### Parameters
-    - `path` (`Path`): The path to the file or folder to be encrypted.
-    - `options` (`AsymmetricEncryptOptions`): The options for encryption.
-    - `output` (`Path`): The path to the output file.
-    - `progress` (`ProgressState`, optional): The shared progress state object.
+    Parameters
+    ----------
+    path : pathlib.Path
+        The path to the file to be encrypted.
+    options : cryptbuddy.structs.options.AsymmetricDecryptOptions
+        The options for encryption.
+    output : pathlib.Path
+        The path to the output file.
+    max_partsize : int
+        Maximum number of bytes to read at once (affects memory usage)
+    progress : rich.progress.Progress, optional
+        Rich progressbar
+
+    See Also
+    --------
+    asymmetric_decrypt : Decrypts a file asymmetrically.
     """
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
 
-    # encrypt the symmetric key for each public key
+    task = None
+    if progress:
+        task = progress.add_task(description=f"Encrypting {path}", total=1)
+        progress.start_task(task)
+
+    # encrypt the symmetric key with each recipent's public key
+    # and map the encrypted symmetric keys with their respective
+    # names
     encrypted_symkeys = {}
-    to_shred = options.shred
     for key in options.public_keys:
         name = key.meta.name
         public_key = key.key
         try:
             encrypted_symkey = encrypt(public_key, options.symkey)
         except EncryptionError as e:
-            raise EncryptionError(f"Failed to encrypt symmetric key for {name}") from e
+            err = EncryptionError(
+                f"Failed to encrypt symmetric key for {name}"
+            ).__cause__ = e
+            if progress:
+                return error(err, progress.console)
+            return print(err)
         encrypted_symkeys[name] = encrypted_symkey
 
-    # create metadata
-    meta = {
+    # we need the length of all the parts to be perfectly divisible
+    # by the chunksize, so that no trailing data is left
+    partsize = max_partsize - max_partsize % options.chunksize
+
+    metadata = {
         "type": options.type,
         "encrypted_symkeys": encrypted_symkeys,
         "nonce": options.nonce,
         "chunksize": options.chunksize,
         "macsize": options.macsize,
+        "partsize": partsize,
     }
 
-    # we will create a single tar file for a directory
-    if path.is_dir():
-        original = path
-        path = tar_directory(path)
-        if options.shred:
-            shred(original)
-        # original folder will be shredded regardless of options.shred
-        # since it is now a tar file
-        to_shred = True
+    infile = open(path, "rb")
+    outfile = open(output, "wb")
 
-    file_data = path.read_bytes()
-
-    try:
-        # encrypt the file data
-        encrypted_data = encrypt_data(
-            file_data,
-            options.symkey,
-            options.nonce,
-            options.chunksize,
-            options.macsize,
-            progress,
-            task,
-        )
-    except EncryptionError as e:
-        err = EncryptionError(f"Failed to encrypt file data for {path.name}")
-        err.__cause__ = e
-        error(err, progress, task)
-        return None
-
-    # add metadata
-    encrypted_data = add_meta(
-        meta,
-        encrypted_data,
-        DELIMITER,
-        ESCAPE_SEQUENCE,
+    meta: bytes = msgpack.packb(metadata)  # type: ignore
+    metasize = len(meta).to_bytes(
+        INTSIZE,
+        "big",
     )
+    # the file starts with the magic bytes followed by the
+    # size of metadata (to be read) followed by the metadata
+    # itself
+    outfile.write(MAGICNUM)
+    outfile.write(metasize)
+    outfile.write(meta)
 
-    if to_shred:
+    executor = ThreadPoolExecutor(max_workers=4)
+    nonce = options.nonce
+
+    # we read the file in parts and encrypt each part
+    while 1:
+        plaintext = infile.read(partsize)
+        if len(plaintext) == 0:
+            break
+        try:
+            # the nonce is incremented after each part (see encrypt_data)
+            encrypted, nonce = encrypt_data(
+                executor,
+                plaintext,
+                options.symkey,
+                nonce,
+                options.chunksize,
+                options.macsize,
+            )
+        except Exception as e:
+            err = EncryptionError(
+                f"Failed to encrypt file data for {path.name}"
+            ).__cause__ = e
+            if progress:
+                return error(err, progress.console)
+            return print(err)
+        outfile.write(encrypted)
+
+    executor.shutdown()
+    infile.close()
+    outfile.close()
+
+    # permanently shreds the original file if specified
+    if options.shred:
         shred(path)
-
-    write_chunks(encrypted_data, output)
-    return None
+    if progress and task:
+        progress.advance(task)
+        progress.update(task, visible=False)
 
 
 def asymmetric_decrypt(
     path: Path,
     options: AsymmetricDecryptOptions,
     output: Path,
-    progress: ProgressState | None = None,
-    task: TaskID | None = None,
+    max_partsize: int,
+    progress: Progress | None = None,
 ) -> None:
     """
-    Decrypts the given file or folder asymmetrically.
+    Decrypts the given file asymmetrically.
 
-    ### Parameters
-    - `path` (`Path`): The path to the file or folder to be decrypted.
-    - `options` (`AsymmetricDecryptOptions`): The options for decryption.
-    - `output` (`Path`): The path to the output file.
-    - `progress` (`ProgressState`, optional): The shared progress state object.
+    Parameters
+    ----------
+    path : pathlib.Path
+        The path to the file or directory to be decrypted.
+    options : cryptbuddy.structs.options.AsymmetricDecryptOptions
+        The options for decryption.
+    output : pathlib.Path
+        The path to the output file.
+    max_partsize : int
+        Maximum number of bytes to read at once
+    progress : rich.progress.Progress, optional
+        Rich progressbar.
+
+    See Also
+    --------
+    asymmetric_encrypt : Encrypts a file asymmetrically.
     """
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
 
-    encrypted_data = path.read_bytes()
+    task = None
+    if progress:
+        task = progress.add_task(description=f"Decrypting {path}", total=1)
+        progress.start_task(task)
 
-    # parse the metadata and encrypted data
-    try:
-        meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
-    except ValueError as e:
-        err = ValueError(
-            f"{path} is corrupt, or a different delimiter was used during encryption"
+    infile = open(path, "rb")
+    outfile = open(output, "wb")
+
+    # verify magic bytes at the beginning of the file
+    filesig = infile.read(len(MAGICNUM))
+    if not filesig == MAGICNUM:
+        err = ValueError(f"{path} was not encrypted using CryptBuddy")
+        if progress:
+            return error(err, progress.console)
+        return print(err)
+
+    # read how big the metadata is
+    metasize = int.from_bytes(infile.read(INTSIZE), "big")
+    # read those amount of bytes to get the serialized metadata
+    meta = infile.read(metasize)
+    metadata = msgpack.unpackb(meta)
+    # verify the metadata is from an asymmetrically encrypted file
+    if metadata["type"] != "asymmetric":
+        err = ValueError(f"{path} is not asymmetrically encrypted")
+        if progress:
+            return error(err, progress.console)
+        return print(err)
+
+    # get required values from metadata
+    encrypted_symkeys: dict[str, bytes] = metadata["encrypted_symkeys"]
+    nonce = metadata["nonce"]
+    macsize = metadata["macsize"]
+    chunksize = metadata["chunksize"]
+    partsize = metadata["partsize"]
+
+    # if the user has given partsize that is lower
+    # than that used during encryption
+    # IT'S NOT POSSIBLE
+    if partsize > max_partsize:
+        e = ValueError(
+            f"{path} requires maximum part size to be greater than or equal to {partsize}"
         )
-        err.__cause__ = e
-        error(err, progress, task)
-        return None
-
-    if not meta["type"] == "asymmetric":
-        error(ValueError(f"{path} is not asymmetrically encrypted"), progress, task)
-        return None
-
-    # get required metadata
-    encrypted_symkeys: dict[str, bytes] = meta["encrypted_symkeys"]
-    nonce = meta["nonce"]
-    macsize = meta["macsize"]
-    chunksize = meta["chunksize"]
+        if progress:
+            return error(e, console=progress.console)
+        return print(e)
 
     if not (encrypted_symkeys and nonce and macsize and chunksize):
-        error(ValueError(f"{path} is corrupt"), progress, task)
-        return None
+        e = ValueError(f"{path} is corrupt")
+        if progress:
+            return error(e, progress.console)
+        return print(e)
 
-    # decrypt personal private key
+    # decrypt the user's private key
     try:
         private_key = options.private_key.decrypted_key(options.password)
     except DecryptionError as e:
         err = DecryptionError(f"Failed to decrypt private key for {options.user}")
         err.__cause__ = e
-        error(err, progress, task)
-        return None
+        if progress:
+            return error(err, progress.console)
+        return print(err)
 
     # get the encrypted symmetric key for this user
     mykey = encrypted_symkeys[options.user]
     if not mykey:
         err = ValueError(f"{path} was not encrypted for {options.user}")
-        error(err, progress, task)
-        return None
+        if progress:
+            return error(err, progress.console)
+        return print(err)
 
     # decrypt the symmetric key using user's private key
     try:
@@ -173,29 +242,39 @@ def asymmetric_decrypt(
     except DecryptionError as e:
         err = DecryptionError(
             f"Failed to decrypt symmetric key for {options.user} in {path}"
-        )
-        err.__cause__ = e
-        error(err, progress, task)
-        return None
+        ).__cause__ = e
+        if progress:
+            return error(err, progress.console)
+        return print(err)
 
-    # decrypt the file data using the symmetric key
-    try:
-        file_data = decrypt_data(
-            encrypted_data, chunksize, symkey, nonce, macsize, progress, task
-        )
-    except DecryptionError as e:
-        err = DecryptionError(f"Failed to decrypt file data for {path.name}")
-        err.__cause__ = e
-        error(err, progress, task)
-        return None
+    # mental gymnastics to reverse the encryption logic
+    chunks_per_part = partsize // chunksize
+    part_extrabytes = chunks_per_part * macsize
+    executor = ThreadPoolExecutor(max_workers=4)
+
+    while 1:
+        ciphertext = infile.read(partsize + part_extrabytes)
+        if len(ciphertext) == 0:
+            break
+        try:
+            decrypted, nonce = decrypt_data(
+                executor, ciphertext, symkey, nonce, chunksize, macsize
+            )
+        except Exception as e:
+            err = DecryptionError(
+                f"Failed to decrypt file data for {path.name}"
+            ).__cause__ = e
+            if progress:
+                return error(err, progress.console)
+            return print(err)
+        outfile.write(decrypted)
+
+    infile.close()
+    outfile.close()
+    executor.shutdown()
 
     if options.shred:
         shred(path)
-
-    write_chunks(file_data, output)
-
-    # untar the directory if it was tarred
-    if output.suffix == ".tar":
-        untar_directory(output, output.parent, options.shred)
-
-    return None
+    if progress and task:
+        progress.advance(task)
+        progress.update(task, visible=False)

@@ -11,7 +11,7 @@ from cryptbuddy.commands.encryption import decrypt, encrypt
 from cryptbuddy.commands.misc import export, shred_path
 from cryptbuddy.operations.clean import clean
 from cryptbuddy.operations.initialize import initialize
-from cryptbuddy.operations.logger import error
+from cryptbuddy.operations.logger import error, warn
 
 __version__ = get_distribution("cryptbuddy").version
 
@@ -85,13 +85,14 @@ def init(
 
     stats = PasswordStats(password).strength()
     if stats < 0.3:
-        error("Password is too weak!")
+        warn("Password is too weak!", console=progress.console)
 
     progress.start()
     try:
         initialize(name, email, password, progress)
     except Exception as e:
-        error(e)
+        error(e, console=progress.console)
+        clean()
     progress.stop()
 
 

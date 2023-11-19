@@ -18,7 +18,8 @@ if not DATA_DIR.exists():
 if not CONFIG_DIR.exists():
     CONFIG_DIR.mkdir(parents=True)
 
-CHUNKSIZE = 5 * 1024 * 1024
+CHUNKSIZE = 512 * 1024
+PARTSIZE = 300 * 1024 * 1024
 MACSIZE = secret.SecretBox.MACBYTES
 OPS = pwhash.argon2i.OPSLIMIT_SENSITIVE
 MEM = pwhash.argon2i.MEMLIMIT_SENSITIVE
@@ -31,6 +32,8 @@ SHRED = True
 TAR = True
 CPUS = 1
 
+INTSIZE = 16
+MAGICNUM = b"\x63\x72\x79\x70\x74\x62\x73\x0C"
 DEFAULT_CONFIG = {
     "chunksize": CHUNKSIZE,
     "macsize": MACSIZE,

@@ -9,17 +9,28 @@ class EncryptOptions:
     """
     Options for encryption.
 
-    ### Attributes
-    - `nonce` (`bytes`): The nonce to be used for encryption.
-    - `salt` (`bytes`): The salt to be used for encryption.
-    - `keysize` (`int`): The size of the encryption key.
-    - `macsize` (`int`): The size of the message authentication code.
-    - `noncesize` (`int`): The size of the nonce.
-    - `saltbytes` (`int`): The size of the salt.
-    - `chunksize` (`int`): The size of each chunk to be encrypted.
-    - `mem` (`int`): The amount of memory to be used for encryption.
-    - `ops` (`int`): The number of operations to be used for encryption.
-    - `shred` (`bool`): Whether to shred the file after encryption.
+    Attributes
+    ----------
+    nonce : bytes
+        The nonce to be used for encryption.
+    salt : bytes
+        The salt to be used for encryption.
+    keysize : int
+        The size of the encryption key.
+    macsize : int
+        The size of the message authentication code.
+    noncesize : int
+        The size of the nonce.
+    saltbytes : int
+        The size of the salt.
+    chunksize : int
+        The size of each chunk to be encrypted.
+    mem : int
+        The amount of memory to be used for encryption.
+    ops : int
+        The number of operations to be used for encryption.
+    shred : bool
+        Whether to shred the file after encryption.
     """
 
     def __init__(
@@ -49,8 +60,10 @@ class DecryptOptions:
     """
     Options for decryption.
 
-    ### Attributes
-    - `shred` (`bool`): Whether to shred the file after decryption.
+    Attributes
+    ----------
+    shred : bool
+        Whether to shred the file after decryption.
     """
 
     def __init__(
@@ -64,12 +77,17 @@ class SymmetricEncryptOptions(EncryptOptions):
     """
     Options for symmetric encryption.
 
-    ### Attributes
-    - `type` (`str`): The type of encryption.
-    - `key` (`bytes`): The encryption key.
+    Attributes
+    ----------
+    type : str
+        The type of encryption.
+    key : bytes
+        The encryption key.
 
-    ### Parameters
-    - `password` (`str`): The password to be used for encryption.
+    Parameters
+    ----------
+    password : str
+        The password to be used for encryption.
     """
 
     def __init__(
@@ -93,15 +111,22 @@ class SymmetricDecryptOptions(DecryptOptions):
     """
     Options for symmetric decryption.
 
-    ### Attributes
-    - `type` (`str`): The type of encryption.
-    - `password` (`str`): The password to be used for decryption.
+    Attributes
+    ----------
+    type : str
+        The type of encryption.
+    password : str
+        The password to be used for decryption.
 
-    ### Methods
-    - `get_key`: Returns the decryption key.
+    Methods
+    -------
+    get_key(salt: bytes, mem, ops, keysize)
+        Returns the decryption key.
 
-    ### Parameters
-    - `password` (`str`): The password to be used for decryption.
+    Parameters
+    ----------
+    password : str
+        The password to be used for decryption.
     """
 
     def __init__(
@@ -118,11 +143,16 @@ class SymmetricDecryptOptions(DecryptOptions):
         """
         Returns the decryption key.
 
-        ### Parameters
-        - `salt` (`bytes`): The salt to be used for decryption.
-        - `mem` (`int`): The amount of memory to be used for decryption.
-        - `ops` (`int`): The number of operations to be used for decryption.
-        - `keysize` (`int`): The size of the decryption key.
+        Parameters
+        ----------
+        salt : bytes
+            The salt to be used for decryption.
+        mem : int
+            The amount of memory to be used for decryption.
+        ops : int
+            The number of operations to be used for decryption.
+        keysize : int
+            The size of the decryption key.
         """
         return kdf(
             keysize,
@@ -137,15 +167,23 @@ class AsymmetricEncryptOptions(EncryptOptions):
     """
     Options for asymmetric encryption.
 
-    ### Attributes
-    - `type` (`str`): The type of encryption.
-    - `public_keys` (`List[AppPublicKey]`): The public keys to be used for encryption.
-    - `symkey` (`bytes`): The symmetric key to be used for encryption.
-    - `keysize` (`int`): The size of the symmetric key.
+    Attributes
+    ----------
+    type : str
+        The type of encryption.
+    public_keys : List[cryptbuddy.structs.app_keys.AppPublicKey]
+        The public keys to be used for encryption.
+    symkey : bytes
+        The symmetric key to be used for encryption.
+    keysize : int
+        The size of the symmetric key.
 
-    ### Parameters
-    - `symkey` (`bytes`): The symmetric key to be used for encryption.
-    - `public_keys` (`List[AppPublicKey]`): The public keys to be used for encryption.
+    Parameters
+    ----------
+    symkey : bytes
+        The symmetric key to be used for encryption.
+    public_keys : List[cryptbuddy.structs.app_keys.AppPublicKey]
+        The public keys to be used for encryption.
     """
 
     def __init__(self, symkey: bytes, public_keys: List[AppPublicKey], *args, **kwargs):
@@ -160,16 +198,25 @@ class AsymmetricDecryptOptions(DecryptOptions):
     """
     Options for asymmetric decryption.
 
-    ### Attributes
-    - `type` (`str`): The type of encryption.
-    - `private_key` (`AppPrivateKey`): The private key to be used for decryption.
-    - `password` (`str`): The password to be used for decryption.
-    - `user` (`str`): The user to be used for decryption.
+    Attributes
+    ----------
+    type : str
+        The type of encryption.
+    private_key : cryptbuddy.structs.app_keys.AppPrivateKey
+        The private key to be used for decryption.
+    password : str
+        The password to be used for decryption.
+    user : str
+        The user to be used for decryption.
 
-    ### Parameters
-    - `private_key` (`AppPrivateKey`): The private key to be used for decryption.
-    - `password` (`str`): The password to be used for decryption.
-    - `user` (`str`): The user to be used for decryption.
+    Parameters
+    ----------
+    private_key : cryptbuddy.structs.app_keys.AppPrivateKey
+        The private key to be used for decryption.
+    password : str
+        The password to be used for decryption.
+    user : str
+        The user to be used for decryption.
     """
 
     def __init__(

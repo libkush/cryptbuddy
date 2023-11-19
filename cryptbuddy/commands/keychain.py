@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from rich.console import Console
 from typing_extensions import Annotated
 
 from cryptbuddy.operations.logger import error, print_keys, success
@@ -27,10 +28,13 @@ def add(
     ]
 ):
     """Add a key to your keychain"""
+    console = Console()
     public_key = AppPublicKey.from_file(key)
-
     chain.add_key(public_key)
-    success(f"{public_key.meta.name}'s public key added to the keychain")
+    success(
+        f"{public_key.meta.name}'s public key added to the keychain",
+        console=console,
+    )
 
 
 @app.command(no_args_is_help=True)
@@ -44,20 +48,22 @@ def delete(
     ] = None,
 ):
     """Delete a key from your keychain"""
+    console = Console()
     if not name and not id:
-        error("Please specify either name or ID")
-
+        e = ValueError("Please specify either name or ID")
+        return error(e, console=console)
     if id:
         chain.delete_key(id=id)
-        success(f"Key with ID {id} deleted from the keychain")
+        success(f"Key with ID {id} deleted from the keychain", console=console)
     else:
         chain.delete_key(name=name)
 
-    success(f"{name}'s public key deleted from the keychain")
+    success(f"{name}'s public key deleted from the keychain", console=console)
 
 
 @app.command("list", no_args_is_help=True)
 def list_cmd():
     """List all the keys in your keychain"""
+    console = Console()
     keys = chain.get_names()
-    print_keys(keys)
+    print_keys(keys, console=console)

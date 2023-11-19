@@ -9,15 +9,23 @@ class Keychain:
     """
     A keychain for storing public keys.
 
-    ### Attributes
-    - `conn` (`sqlite3.Connection`): The connection to the database.
-    - `c` (`sqlite3.Cursor`): The cursor for the database.
+    Attributes
+    ----------
+    conn : sqlite3.Connection
+        The connection to the database.
+    c : sqlite3.Cursor
+        The cursor for the database.
 
-    ### Methods
-    - `add_key`: Adds a key to the keychain.
-    - `get_key`: Retrieves a key from the keychain.
-    - `get_keys`: Retrieves all keys from the keychain.
-    - `remove_key`: Removes a key from the keychain.
+    Methods
+    -------
+    add_key(key: AppPublicKey)
+        Adds a key to the keychain.
+    get_key(name: str | None = None, id: int | None = None)
+        Retrieves a key from the keychain.
+    get_keys()
+        Retrieves all keys from the keychain.
+    remove_key(name: str | None = None, id: int | None = None)
+        Removes a key from the keychain.
     """
 
     def __init__(self):
@@ -47,15 +55,13 @@ class Keychain:
         """
         Add a key to the keychain.
 
-        ### Parameters
-        - `key` (`AppPublicKey`): The key to be added.
-
-        ### Raises
-        - `sqlite3.IntegrityError`: If the key already exists.
-
+        Parameters
+        ----------
+        key : cryptbuddy.structs.app_keys.AppPublicKey
+            The key to be added.
         """
         self.c.execute(
-            "INSERT INTO keys (name, key) VALUES (?, ?)", (key.meta.name, key.packed)
+            "INSERT INTO keys (name, key) VALUES (?, ?)", (key.meta.name, key.data)
         )
         self.conn.commit()
 
@@ -63,16 +69,17 @@ class Keychain:
         """
         Retrieve a key from the keychain.
 
-        ### Parameters
-        - `name` (`str`, optional): The name of the key.
-        - `id` (`int`, optional): The ID of the key.
+        Parameters
+        ----------
+        name : str, optional
+            The name of the key.
+        id : int, optional
+            The ID of the key.
 
-        ### Returns
-        `AppPublicKey`: The key.
-
-        ### Raises
-        - `ValueError`: If neither name nor ID is specified.
-        - `TypeError`: If the key is not found.
+        Returns
+        -------
+        cryptbuddy.structs.app_keys.AppPublicKey
+            The key.
         """
         if not name and not id:
             raise ValueError("Must specify name or ID")
@@ -92,8 +99,10 @@ class Keychain:
         """
         Retrieve all key names from the keychain.
 
-        ### Returns
-        `List[Tuple[int, str]]`: A list of key names.
+        Returns
+        -------
+        List[Tuple[int, str]]
+            A list of key names.
         """
         self.c.execute("SELECT id, name FROM keys")
         return self.c.fetchall()
@@ -102,12 +111,12 @@ class Keychain:
         """
         Delete a key from the keychain.
 
-        ### Parameters
-        - `name` (`str`, optional): The name of the key.
-        - `id` (`int`, optional): The ID of the key.
-
-        ### Raises
-        - `ValueError`: If neither name nor ID is specified.
+        Parameters
+        ----------
+        name : str, optional
+            The name of the key.
+        id : int, optional
+            The ID of the key.
         """
         if not name and not id:
             raise ValueError("Must specify name or ID")

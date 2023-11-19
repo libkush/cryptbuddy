@@ -3,14 +3,10 @@ from logging.handlers import RotatingFileHandler
 from typing import List, Tuple
 
 from rich.console import Console
-from rich.progress import TaskID
 from rich.table import Table
 from rich.text import Text
 
 from cryptbuddy.config import CACHE_DIR
-from cryptbuddy.structs.types import ProgressState
-
-console = Console()
 
 error_handler = RotatingFileHandler(
     CACHE_DIR / "errors.log", maxBytes=1024, backupCount=5
@@ -24,12 +20,16 @@ error_logger.setLevel(logging.ERROR)
 error_logger.addHandler(error_handler)
 
 
-def print_keys(records: List[Tuple[int, str]]):
+def print_keys(records: List[Tuple[int, str]], console: Console):
     """
     Prints a list of keys to the console.
 
-    ### Parameters
-    - `records` (`List[Tuple[int, str]]`): A list of key records.
+    Parameters
+    ----------
+    records : List[Tuple[int, str]]
+        A list of key records.
+    console : rich.console.Console
+        Rich console instance
     """
     table = Table(show_header=True, header_style="bold magenta")
 
@@ -37,46 +37,68 @@ def print_keys(records: List[Tuple[int, str]]):
     table.add_column("Name")
     for record in records:
         table.add_row(str(record[0]), record[1])
-
     console.print(table)
 
 
-def info(*msgs: object):
+def info(*msgs: object, console: Console):
     """
     Prints info messages to the console.
 
-    ### Parameters
-    - `*msgs` (`object`): The messages to be printed.
+    Parameters
+    ----------
+    *msgs : object
+        The messages to be printed.
+    console : rich.console.Console
+        Rich console instance
     """
     message = " ".join(str(msg) for msg in msgs)
-    text = Text(message, style="bold blue")
+    text = Text(message, style="blue")
     console.print(text)
 
 
-def error(e: Exception, progress: ProgressState = None, task: TaskID = None):
+def error(e: Exception, console: Console):
     """
     Prints error messages to the console and logs them.
 
-    ### Parameters
-    - `e` (`Exception`): The exception to be printed.
-    - `progress` (`ProgressState`, optional): A progress state object.
-    - `task` (`TaskID`, optional): The task to be updated.
+    Parameters
+    ----------
+    e : Exception
+        The exception to be printed.
+    console : rich.console.Console
+        Rich console instance
     """
     error_logger.exception(e, exc_info=True)
     message = str(e)
     text = Text(message, style="bold red")
-    if progress and task:
-        progress.update(task, description=text, completed=0, total=1)
-    else:
-        console.print(text)
+    console.print(text)
 
 
-def success(*msgs: object):
+def warn(*msgs: object, console: Console):
     """
     Prints success messages to the console.
 
-    ### Parameters
-    - `*msgs` (`object`): The messages to be printed.
+    Parameters
+    ----------
+    *msgs : object
+        The messages to be printed.
+    console : rich.console.Console
+        Rich console instance
+    """
+    message = " ".join(str(msg) for msg in msgs)
+    text = Text(message, style="orange")
+    console.print(text)
+
+
+def success(*msgs: object, console: Console):
+    """
+    Prints success messages to the console.
+
+    Parameters
+    ----------
+    *msgs : object
+        The messages to be printed.
+    console : rich.console.Console
+        Rich console instance
     """
     message = " ".join(str(msg) for msg in msgs)
     text = Text(message, style="bold green")

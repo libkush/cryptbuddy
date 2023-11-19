@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ormsgpack import unpackb
+import msgpack
 
 from cryptbuddy.constants import (
     CONFIG_FILE,
@@ -15,7 +15,7 @@ config_data = CONFIG_FILE.read_bytes() if CONFIG_FILE.exists() else None
 if not config_data:
     CONFIG = DEFAULT_CONFIG
 else:
-    CONFIG = unpackb(config_data)
+    CONFIG = msgpack.unpackb(config_data)
 
 KEYSIZE: int = KEYSIZE
 SALTBYTES: int = SALTBYTES

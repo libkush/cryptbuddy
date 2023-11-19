@@ -1,48 +1,56 @@
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from rich.progress import TaskID
+import msgpack
+from rich.progress import Progress
 
-from cryptbuddy.config import DELIMITER, ESCAPE_SEQUENCE
-from cryptbuddy.functions.file_data import add_meta, parse_data
-from cryptbuddy.functions.file_io import (
-    shred,
-    tar_directory,
-    untar_directory,
-    write_chunks,
-)
+from cryptbuddy.constants import INTSIZE, MAGICNUM
+from cryptbuddy.functions.file_ops import shred
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
 from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
 from cryptbuddy.structs.options import SymmetricDecryptOptions, SymmetricEncryptOptions
-from cryptbuddy.structs.types import ProgressState
 
 
 def symmetric_encrypt(
     path: Path,
     options: SymmetricEncryptOptions,
     output: Path,
-    progress: ProgressState = None,
-    task: TaskID = None,
+    max_partsize: int,
+    progress: Progress | None = None,
 ) -> None:
     """
-    Encrypts the given file or folder symmetrically.
+    Encrypts a file symmetrically.
 
-    ### Parameters
-    - `path` (`Path`): The path to the file or folder to be encrypted.
-    - `options` (`SymmetricEncryptOptions`): The options for encryption.
-    - `progress` (`ProgressState`, optional): The shared progress state object.
-    - `output` (`Path`): The path to the output file.
+    Parameters
+    ----------
+    path : pathlib.Path
+        The path to the file to be encrypted.
+    options : cryptbuddy.structs.options.SymmetricEncryptOptions
+        The options for encryption.
+    output : pathlib.Path
+        The path to the output file.
+    max_partsize : int
+        Maximum number of bytes to read at once. (affects memory usage)
+    progress : rich.progress.Progress, optional
+        Rich progressbar.
 
-    ### Raises
-    - `FileNotFoundError`: If the file or folder does not exist.
+    See Also
+    --------
+    symmetric_decrypt : Decrypts a file symmetrically.
     """
+    # the logic in this function is pretty identical (and simpler) to the one
+    # described in asymmetric_encrypt() function. GO READ IT!
     if not path.exists():
-        raise FileNotFoundError("File or folder does not exist")
+        raise FileNotFoundError(f"{path} does not exist")
 
-    to_shred = options.shred
+    partsize = max_partsize - max_partsize % options.chunksize
 
-    # create metadata
-    meta = {
+    task = None
+    if progress:
+        task = progress.add_task(description=f"Encrypting {path}", total=1)
+
+    metadata = {
         "type": options.type,
         "nonce": options.nonce,
         "salt": options.salt,
@@ -51,133 +59,160 @@ def symmetric_encrypt(
         "chunksize": options.chunksize,
         "macsize": options.macsize,
         "keysize": options.keysize,
+        "partsize": partsize,
     }
 
-    # create a tar archive if path is a directory
-    if path.is_dir():
-        original = path
-        path = tar_directory(path)
-        if options.shred:
-            shred(original)
-        # original directory shredded regardless of options.shred
-        to_shred = True
+    infile = open(path, "rb")
+    outfile = open(output, "wb")
 
-    file_data = path.read_bytes()
-
-    try:
-        # encrypt the file data
-        encrypted_data = encrypt_data(
-            file_data,
-            options.key,
-            options.nonce,
-            options.chunksize,
-            options.macsize,
-            progress,
-            task,
-        )
-    except Exception as e:
-        err = EncryptionError(f"Failed to encrypt file data for {path.name}")
-        err.__cause__ = e
-        error(err, progress, task)
-        return None
-
-    # add metadata
-    encrypted_data = add_meta(
-        meta,
-        encrypted_data,
-        DELIMITER,
-        ESCAPE_SEQUENCE,
+    meta: bytes = msgpack.packb(metadata)  # type: ignore
+    metasize = len(meta).to_bytes(
+        INTSIZE,
+        "big",
     )
+    outfile.write(MAGICNUM)
+    outfile.write(metasize)
+    outfile.write(meta)
 
-    if to_shred:
+    executor = ThreadPoolExecutor(max_workers=4)
+    nonce = options.nonce
+    while 1:
+        plaintext = infile.read(partsize)
+        if len(plaintext) == 0:
+            break
+        try:
+            encrypted, nonce = encrypt_data(
+                executor,
+                plaintext,
+                options.key,
+                nonce,
+                options.chunksize,
+                options.macsize,
+            )
+        except Exception as e:
+            err = EncryptionError(
+                f"Failed to encrypt file data for {path.name}"
+            ).__cause__ = e
+            if progress:
+                return error(err, progress.console)
+            return print(e)
+        outfile.write(encrypted)
+
+    executor.shutdown()
+    infile.close()
+    outfile.close()
+
+    if options.shred:
         shred(path)
-
-    write_chunks(encrypted_data, output)
-    return None
+    if progress and task:
+        progress.advance(task)
+        progress.update(task, visible=False)
 
 
 def symmetric_decrypt(
     path: Path,
     options: SymmetricDecryptOptions,
     output: Path,
-    progress: ProgressState = None,
-    task: TaskID = None,
+    max_partsize: int,
+    progress: Progress | None = None,
 ) -> None:
     """
-    Decrypts the given file or folder symmetrically.
+    Decrypts a file symmetrically.
 
-    ### Parameters
-    - `path` (`Path`): The path to the file or folder to be decrypted.
-    - `options` (`SymmetricDecryptOptions`): The options for decryption.
-    - `output` (`Path`): The path to the output file.
-    - `progress` (`ProgressState`, optional): The shared progress state object.
-    - `task` (`TaskID`, optional): The task ID for the progress bar.
+    Parameters
+    ----------
+    path : pathlib.Path
+        The path to the file to be decrypted.
+    options : cryptbuddy.structs.options.SymmetricDecryptOptions
+        The options for decryption.
+    output : pathlib.Path
+        The path to the output file.
+    max_partsize : int
+        Maximum number of bytes to read at once.
+    progress : rich.progress.Progress, optional
+        Rich progressbar.
 
-    ### Raises
-    - `FileNotFoundError`: If the file or folder does not exist.
-    - `ValueError`: If the file is not encrypted symmetrically.
+    See Also
+    --------
+    symmetric_encrypt : Encrypts a file symmetrically.
     """
+    # Again, read asymmetric_decrypt() function to understand the logic
     if not path.exists():
         raise FileNotFoundError(f"{path} does not exist")
 
-    encrypted_data = path.read_bytes()
+    task = None
+    if progress:
+        task = progress.add_task(description=f"Decrypting {path}", total=1)
 
-    try:
-        # parse metadata and encrypted data
-        meta, encrypted_data = parse_data(encrypted_data, DELIMITER, ESCAPE_SEQUENCE)
-    except ValueError as e:
-        err = ValueError(
-            f"{path} is corrupt, or a different delimiter was used during encryption"
-        )
-        err.__cause__ = e
-        error(err, progress, task)
-        return None
+    infile = open(path, "rb")
+    outfile = open(output, "wb")
 
-    if meta["type"] != "symmetric":
+    filesig = infile.read(len(MAGICNUM))
+    if not filesig == MAGICNUM:
+        err = ValueError(f"{path} was not encrypted using CryptBuddy")
+        if progress:
+            return error(err, progress.console)
+        return print(err)
+
+    metasize = int.from_bytes(infile.read(INTSIZE), "big")
+    meta = infile.read(metasize)
+    metadata = msgpack.unpackb(meta)
+    if metadata["type"] != "symmetric":
         err = ValueError(f"{path} is not symmetrically encrypted")
-        error(err, progress, task)
-        return None
+        if progress:
+            return error(err, progress.console)
+        return print(err)
+    ops = metadata["ops"]
+    mem = metadata["mem"]
+    salt = metadata["salt"]
+    nonce = metadata["nonce"]
+    chunksize = metadata["chunksize"]
+    macsize = metadata["macsize"]
+    keysize = metadata["keysize"]
+    partsize = metadata["partsize"]
+    chunks_per_part = partsize // chunksize
 
-    # get required values from metadata
-    ops = meta["ops"]
-    mem = meta["mem"]
-    salt = meta["salt"]
-    nonce = meta["nonce"]
-    chunksize = meta["chunksize"]
-    macsize = meta["macsize"]
-    keysize = meta["keysize"]
+    if partsize > max_partsize:
+        e = ValueError(
+            f"{path} requires maximum part size to be greater than or equal to {partsize}"
+        )
+        if progress:
+            return error(e, progress.console)
+        return print(e)
 
     if not (ops and mem and salt and nonce and chunksize and macsize and keysize):
-        error(ValueError(f"{path} is corrupt"), progress, task)
-        return None
+        err = ValueError(f"{path} is corrupt")
+        if progress:
+            return error(err, progress.console)
+        return print(err)
 
-    # get the symmetric key
     key = options.get_key(salt, mem, ops, keysize)
+    part_extrabytes = chunks_per_part * macsize
+    executor = ThreadPoolExecutor(max_workers=4)
 
-    try:
-        # decrypt the file data
-        decrypted_data = decrypt_data(
-            encrypted_data,
-            chunksize,
-            key,
-            nonce,
-            macsize,
-            progress,
-            task,
-        )
-    except Exception as e:
-        err = DecryptionError(f"Failed to decrypt file data for {path.name}")
-        err.__cause__ = e
-        error(err, progress, task)
-        return None
+    while 1:
+        ciphertext = infile.read(partsize + part_extrabytes)
+        if len(ciphertext) == 0:
+            break
+        try:
+            decrypted, nonce = decrypt_data(
+                executor, ciphertext, key, nonce, chunksize, macsize
+            )
+        except Exception as e:
+            err = DecryptionError(
+                f"Failed to decrypt file data for {path.name}"
+            ).__cause__ = e
+            if progress:
+                return error(err, progress.console)
+            return print(err)
+        outfile.write(decrypted)
+
+    infile.close()
+    outfile.close()
+    executor.shutdown()
 
     if options.shred:
         shred(path)
-
-    write_chunks(decrypted_data, output)
-
-    # untar the directory if output is a directory
-    if output.suffix == ".tar":
-        untar_directory(output, output.parent, options.shred)
-
-    return None
+    if progress and task:
+        progress.advance(task)
+        progress.update(task, visible=False)

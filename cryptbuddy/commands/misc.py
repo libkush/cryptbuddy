@@ -3,10 +3,11 @@ from shutil import copyfile
 from typing import List
 
 import typer
+from rich.console import Console
 from typing_extensions import Annotated
 
 from cryptbuddy.config import CONFIG_DIR
-from cryptbuddy.functions.file_io import shred as shred_file
+from cryptbuddy.functions.file_ops import shred as shred_file
 from cryptbuddy.operations.logger import error, success
 
 
@@ -24,16 +25,18 @@ def export(
     ]
 ):
     """Export your public key file to specified directory to share with others"""
+    console = Console()
     public_key_path = Path(f"{CONFIG_DIR}/public.key")
     if not public_key_path.exists():
-        error("Public key not found")
+        e = FileNotFoundError("Public key not found")
+        return error(e, console=console)
 
     try:
         copyfile(public_key_path, Path(f"{directory}/public.key"))
     except Exception as e:
-        error(e)
+        return error(e, console=console)
 
-    success("File exported.")
+    success("File exported.", console=console)
 
 
 def shred_path(
@@ -44,14 +47,15 @@ def shred_path(
             readable=True,
             writable=True,
             resolve_path=True,
-            help="Paths of the file(s) and folder(s) to shred",
+            help="Paths of the file(s) and directories to shred",
         ),
     ],
 ):
-    """Shred file(s) or folder(s)"""
+    """Shred file(s) or directories"""
+    console = Console()
     # shredding works by overwriting the file with random data
     # and then deleting it. this way, the file is unrecoverable
     for path in paths:
         shred_file(path)
 
-    success("File(s) shredded.")
+    success("File(s) shredded.", console=console)
