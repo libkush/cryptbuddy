@@ -18,6 +18,7 @@ from cryptbuddy.constants import (
     OPS,
     SALTBYTES,
 )
+from cryptbuddy.functions.file_ops import extract_metadata
 from cryptbuddy.functions.symmetric import decrypt_chunk, encrypt_chunk
 
 
@@ -181,12 +182,7 @@ class AppPrivateKey(BaseKey):
             The metadata of the key.
         """
         dataIO = io.BytesIO(data)
-        sig = dataIO.read(len(MAGICNUM))
-        if not sig == MAGICNUM:
-            raise ValueError("The key was not recognised")
-        metasize = int.from_bytes(dataIO.read(INTSIZE), "big")
-        meta = dataIO.read(metasize)
-        metadata = msgpack.unpackb(meta)
+        metadata = extract_metadata(dataIO, MAGICNUM, INTSIZE)
         if not metadata["type"] == "CB_PRI_KEY":
             raise ValueError("Invalid key type")
         symkey = kdf(
@@ -365,12 +361,7 @@ class AppPublicKey(BaseKey):
             The public key.
         """
         dataIO = io.BytesIO(data)
-        sig = dataIO.read(len(MAGICNUM))
-        if not sig == MAGICNUM:
-            raise ValueError("The key was not recognised")
-        metasize = int.from_bytes(dataIO.read(INTSIZE), "big")
-        meta = dataIO.read(metasize)
-        metadata = msgpack.unpackb(meta)
+        metadata = extract_metadata(dataIO, MAGICNUM, INTSIZE)
         if metadata["type"] != "CB_PUB_KEY":
             raise ValueError("Invalid key type")
         public_key = PublicKey(dataIO.read())

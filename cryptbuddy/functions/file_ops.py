@@ -1,5 +1,8 @@
+from io import BufferedReader, BytesIO
 from os import urandom
 from pathlib import Path
+
+import msgpack
 
 
 def shred(path: Path) -> None:
@@ -77,3 +80,17 @@ def get_decrypted_outfile(path: Path, output: Path | None = None) -> Path:
         else path.with_suffix(".dec").name
     )
     return output_dir / decrypted_name
+
+
+def extract_metadata(file: BufferedReader | BytesIO, magicnum: bytes, intsize: int):
+    # verify magic bytes at the beginning of the file
+    filesig = file.read(len(magicnum))
+    if not filesig == magicnum:
+        raise ValueError("Unrecognized file type")
+
+    # read how big the metadata is
+    metasize = int.from_bytes(file.read(intsize), "big")
+    # read those amount of bytes to get the serialized metadata
+    meta = file.read(metasize)
+    metadata = msgpack.unpackb(meta)
+    return metadata

@@ -5,7 +5,7 @@ import msgpack
 from rich.progress import Progress
 
 from cryptbuddy.constants import INTSIZE, MAGICNUM
-from cryptbuddy.functions.file_ops import shred
+from cryptbuddy.functions.file_ops import extract_metadata, shred
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
 from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
@@ -145,14 +145,12 @@ def symmetric_decrypt(
     infile = open(path, "rb")
     outfile = open(output, "wb")
 
-    filesig = infile.read(len(MAGICNUM))
-    if not filesig == MAGICNUM:
-        err = ValueError(f"{path} was not encrypted using CryptBuddy")
+    try:
+        metadata = extract_metadata(infile, MAGICNUM, INTSIZE)
+    except ValueError as e:
+        err = ValueError(f"{path} was not encrypted using CryptBuddy").__cause__ = e
         return error(err, getattr(progress, "console"))
 
-    metasize = int.from_bytes(infile.read(INTSIZE), "big")
-    meta = infile.read(metasize)
-    metadata = msgpack.unpackb(meta)
     if metadata["type"] != "symmetric":
         err = ValueError(f"{path} is not symmetrically encrypted")
         return error(err, getattr(progress, "console"))

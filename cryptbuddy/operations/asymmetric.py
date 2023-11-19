@@ -6,7 +6,7 @@ from rich.progress import Progress
 
 from cryptbuddy.constants import INTSIZE, MAGICNUM
 from cryptbuddy.functions.asymmetric import decrypt, encrypt
-from cryptbuddy.functions.file_ops import shred
+from cryptbuddy.functions.file_ops import extract_metadata, shred
 from cryptbuddy.functions.symmetric import decrypt_data, encrypt_data
 from cryptbuddy.operations.logger import error
 from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
@@ -170,17 +170,12 @@ def asymmetric_decrypt(
     infile = open(path, "rb")
     outfile = open(output, "wb")
 
-    # verify magic bytes at the beginning of the file
-    filesig = infile.read(len(MAGICNUM))
-    if not filesig == MAGICNUM:
-        err = ValueError(f"{path} was not encrypted using CryptBuddy")
+    try:
+        metadata = extract_metadata(infile, MAGICNUM, INTSIZE)
+    except ValueError as e:
+        err = ValueError(f"{path} was not encrypted using CryptBuddy").__cause__ = e
         return error(err, getattr(progress, "console"))
 
-    # read how big the metadata is
-    metasize = int.from_bytes(infile.read(INTSIZE), "big")
-    # read those amount of bytes to get the serialized metadata
-    meta = infile.read(metasize)
-    metadata = msgpack.unpackb(meta)
     # verify the metadata is from an asymmetrically encrypted file
     if metadata["type"] != "asymmetric":
         err = ValueError(f"{path} is not asymmetrically encrypted")
