@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 
 import cryptbuddy.commands.keychain as keychain
 from cryptbuddy.commands.encryption import decrypt, encrypt
-from cryptbuddy.commands.misc import export, shred_path
+from cryptbuddy.commands.misc import export, shred
 from cryptbuddy.operations.clean import clean
 from cryptbuddy.operations.initialize import initialize
 from cryptbuddy.operations.logger import error, warn
@@ -102,7 +102,7 @@ app.command(no_args_is_help=True)(decrypt)
 
 app.command(no_args_is_help=True)(export)
 
-app.command(no_args_is_help=True)(shred_path)
+app.command(no_args_is_help=True)(shred)
 
 if __name__ == "__main__":
     app()

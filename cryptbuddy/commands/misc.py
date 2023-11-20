@@ -39,7 +39,7 @@ def export(
     return success("File exported.", console=console)
 
 
-def shred_path(
+def shred(
     paths: Annotated[
         List[Path],
         typer.Argument(

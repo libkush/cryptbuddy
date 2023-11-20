@@ -6,7 +6,12 @@ This was written as an investigatory project for CBSE class XII board exams.
 
 Whitepaper can be found at https://static.kush.in/projects/CryptBuddy.pdf
 
+
+Install: 
+pip3 install cryptbuddy
+
 The CLI can be called using any of the commands 'cb', 'crypt', or 'cryptbuddy'
+
 
 Usage: cb [OPTIONS] COMMAND [ARGS]...                                            
                                                                                   
@@ -29,5 +34,5 @@ Usage: cb [OPTIONS] COMMAND [ARGS]...
 │ init        Initialize cryptbuddy by generating a key-pair and creating the    │
 │             keychain database                                                  │
 │ keychain    Manage your keychain                                               │
-│ shred-path  Shred file(s) or directories                                       │
+│ shred       Shred file(s) or directories                                       │
 ╰────────────────────────────────────────────────────────────────────────────────╯
