@@ -118,6 +118,7 @@ def asymmetric_encrypt(
             ).__cause__ = e
             return error(err, getattr(progress, "console", None))
         outfile.write(encrypted)
+        outfile.flush()
 
     executor.shutdown()
     infile.close()
@@ -237,6 +238,7 @@ def asymmetric_decrypt(
             ).__cause__ = e
             return error(err, getattr(progress, "console", None))
         outfile.write(decrypted)
+        outfile.flush()
 
     infile.close()
     outfile.close()
