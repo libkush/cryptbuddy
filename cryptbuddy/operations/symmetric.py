@@ -79,12 +79,7 @@ def symmetric_encrypt(
     while plaintext := infile.read(partsize):
         try:
             encrypted, nonce = encrypt_data(
-                executor,
-                plaintext,
-                options.key,
-                nonce,
-                options.chunksize,
-                options.macsize,
+                executor, plaintext, options.key, nonce, options.chunksize
             )
         except Exception as e:
             err = EncryptionError(

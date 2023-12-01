@@ -4,8 +4,6 @@ from typing import Tuple
 from nacl.bindings import sodium_increment
 from nacl.secret import SecretBox
 
-from cryptbuddy.structs.exceptions import DecryptionError, EncryptionError
-
 
 def encrypt_chunk(args: Tuple[bytes, SecretBox, bytes]) -> bytes:
     """
@@ -31,7 +29,6 @@ def encrypt_data(
     key: bytes,
     nonce: bytes,
     chunksize: int,
-    macsize: int,
 ) -> Tuple[bytes, bytes]:
     """
     Encrypts data using the provided key and nonce.

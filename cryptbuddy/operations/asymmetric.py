@@ -105,12 +105,7 @@ def asymmetric_encrypt(
         try:
             # the nonce is incremented after each part (see encrypt_data)
             encrypted, nonce = encrypt_data(
-                executor,
-                plaintext,
-                options.symkey,
-                nonce,
-                options.chunksize,
-                options.macsize,
+                executor, plaintext, options.symkey, nonce, options.chunksize
             )
         except Exception as e:
             err = EncryptionError(
@@ -174,7 +169,7 @@ def asymmetric_decrypt(
     try:
         metadata = extract_metadata(infile, MAGICNUM, INTSIZE)
         if metadata["type"] != "asymmetric":
-            raise ValueError(f"Not asymmetrically encrypted.")
+            raise ValueError("Not asymmetrically encrypted.")
 
         # get required values from metadata
         encrypted_symkeys: dict[str, bytes] = metadata["encrypted_symkeys"]
