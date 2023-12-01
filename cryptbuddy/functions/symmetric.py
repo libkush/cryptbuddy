@@ -73,17 +73,6 @@ def encrypt_data(
     # the thread pool will encrypt each chunk in parallel
     out = b"".join(executor.map(encrypt_chunk, args))
 
-    # the output of each chunk has mac bytes for authentication
-    # hence the expected size is number of args times
-    # chunksize + macsize
-    # however if data is present in a single chunk, the
-    # size is length of data + macsize
-    expected_outsize = (
-        (chunksize + macsize) * len(args) if (len(args) > 1) else total + macsize
-    )
-    if not len(out) == expected_outsize:
-        raise EncryptionError("Error encrypting given data")
-
     # since this function is meant to be called from
     # symmetric_encrypt() function, we need to return the
     # incremented nonce value after the last chunk
@@ -151,13 +140,6 @@ def decrypt_data(
         args.append((chunk, box, nonce))
         i += chunksize + macsize
     out = b"".join(executor.map(decrypt_chunk, args))
-
-    # the outsize here is just the chunksize times total chunks
-    # but if there's just one chunk, it will be the size of
-    # encrypted data minus the macsize
-    expected_outsize = chunksize * len(args) if (len(args) > 1) else total - macsize
-    if not len(out) == expected_outsize:
-        raise DecryptionError("Error decrypting given data")
 
     nextnonce = sodium_increment(nonce)
     return out, nextnonce
