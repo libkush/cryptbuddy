@@ -76,10 +76,7 @@ def symmetric_encrypt(
 
     executor = ThreadPoolExecutor(max_workers=4)
     nonce = options.nonce
-    while 1:
-        plaintext = infile.read(partsize)
-        if len(plaintext) == 0:
-            break
+    while plaintext := infile.read(partsize):
         try:
             encrypted, nonce = encrypt_data(
                 executor,
@@ -148,22 +145,24 @@ def symmetric_decrypt(
 
     try:
         metadata = extract_metadata(infile, MAGICNUM, INTSIZE)
-    except ValueError as e:
-        err = ValueError(f"{path} was not encrypted using CryptBuddy").__cause__ = e
-        return error(err, getattr(progress, "console", None))
+        if metadata["type"] != "symmetric":
+            raise ValueError(f"{path} is not symmetrically encrypted")
+        ops = metadata["ops"]
+        mem = metadata["mem"]
+        salt = metadata["salt"]
+        nonce = metadata["nonce"]
+        chunksize = metadata["chunksize"]
+        macsize = metadata["macsize"]
+        keysize = metadata["keysize"]
+        partsize = metadata["partsize"]
+        if not (ops and mem and salt and nonce and chunksize and macsize and keysize):
+            raise ValueError(f"{path} might be corrupt.")
 
-    if metadata["type"] != "symmetric":
-        err = ValueError(f"{path} is not symmetrically encrypted")
+        chunks_per_part = partsize // chunksize
+
+    except ValueError as e:
+        err = ValueError(f"{path} has an invalid format.").__cause__ = e
         return error(err, getattr(progress, "console", None))
-    ops = metadata["ops"]
-    mem = metadata["mem"]
-    salt = metadata["salt"]
-    nonce = metadata["nonce"]
-    chunksize = metadata["chunksize"]
-    macsize = metadata["macsize"]
-    keysize = metadata["keysize"]
-    partsize = metadata["partsize"]
-    chunks_per_part = partsize // chunksize
 
     if partsize > max_partsize:
         err = ValueError(
@@ -172,16 +171,11 @@ def symmetric_decrypt(
         )
         return error(err, getattr(progress, "console", None))
 
-    if not (ops and mem and salt and nonce and chunksize and macsize and keysize):
-        err = ValueError(f"{path} is corrupt")
-        return error(err, getattr(progress, "console", None))
-
     key = options.get_key(salt, mem, ops, keysize)
     part_extrabytes = chunks_per_part * macsize
     executor = ThreadPoolExecutor(max_workers=4)
 
-    while 1:
-        ciphertext = infile.read(partsize + part_extrabytes)
+    while ciphertext := infile.read(partsize + part_extrabytes):
         if len(ciphertext) == 0:
             break
         try:

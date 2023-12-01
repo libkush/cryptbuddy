@@ -99,8 +99,7 @@ def asymmetric_encrypt(
     nonce = options.nonce
 
     # we read the file in parts and encrypt each part
-    while 1:
-        plaintext = infile.read(partsize)
+    while plaintext := infile.read(partsize):
         if len(plaintext) == 0:
             break
         try:
@@ -173,21 +172,22 @@ def asymmetric_decrypt(
 
     try:
         metadata = extract_metadata(infile, MAGICNUM, INTSIZE)
+        if metadata["type"] != "asymmetric":
+            raise ValueError(f"Not asymmetrically encrypted.")
+
+        # get required values from metadata
+        encrypted_symkeys: dict[str, bytes] = metadata["encrypted_symkeys"]
+        nonce = metadata["nonce"]
+        macsize = metadata["macsize"]
+        chunksize = metadata["chunksize"]
+        partsize = metadata["partsize"]
+
+        if not (encrypted_symkeys and nonce and macsize and chunksize):
+            raise ValueError(f"{path} might be corrupted.")
+
     except ValueError as e:
-        err = ValueError(f"{path} was not encrypted using CryptBuddy").__cause__ = e
+        err = ValueError(f"{path} has an invalid format.").__cause__ = e
         return error(err, getattr(progress, "console", None))
-
-    # verify the metadata is from an asymmetrically encrypted file
-    if metadata["type"] != "asymmetric":
-        err = ValueError(f"{path} is not asymmetrically encrypted")
-        return error(err, getattr(progress, "console", None))
-
-    # get required values from metadata
-    encrypted_symkeys: dict[str, bytes] = metadata["encrypted_symkeys"]
-    nonce = metadata["nonce"]
-    macsize = metadata["macsize"]
-    chunksize = metadata["chunksize"]
-    partsize = metadata["partsize"]
 
     # if the user has given partsize that is lower
     # than that used during encryption
@@ -199,31 +199,26 @@ def asymmetric_decrypt(
         )
         return error(err, getattr(progress, "console", None))
 
-    if not (encrypted_symkeys and nonce and macsize and chunksize):
-        err = ValueError(f"{path} is corrupt")
-        return error(err, getattr(progress, "console", None))
-
-    # decrypt the user's private key
     try:
+        # decrypt the user's private key
         private_key = options.private_key.decrypted_key(options.password)
-    except DecryptionError as e:
-        err = DecryptionError(f"Failed to decrypt private key for {options.user}")
+        # get the encrypted symmetric key for this user
+        mykey = encrypted_symkeys[options.user]
+        if not mykey:
+            raise ValueError(f"{path} was not encrypted for {options.user}")
+        symkey = decrypt(private_key, mykey)
+
+    except ValueError as e:
+        return error(e, getattr(progress, "console", None))
+    except KeyError as e:
+        err = KeyError(f"Failed to get symmetric key for {options.user} in {path}")
         err.__cause__ = e
         return error(err, getattr(progress, "console", None))
-
-    # get the encrypted symmetric key for this user
-    mykey = encrypted_symkeys[options.user]
-    if not mykey:
-        err = ValueError(f"{path} was not encrypted for {options.user}")
-        return error(err, getattr(progress, "console", None))
-
-    # decrypt the symmetric key using user's private key
-    try:
-        symkey = decrypt(private_key, mykey)
     except DecryptionError as e:
         err = DecryptionError(
-            f"Failed to decrypt symmetric key for {options.user} in {path}"
-        ).__cause__ = e
+            f"Failed to get symmetric key for {options.user} in {path}"
+        )
+        err.__cause__ = e
         return error(err, getattr(progress, "console", None))
 
     # mental gymnastics to reverse the encryption logic
@@ -231,10 +226,7 @@ def asymmetric_decrypt(
     part_extrabytes = chunks_per_part * macsize
     executor = ThreadPoolExecutor(max_workers=4)
 
-    while 1:
-        ciphertext = infile.read(partsize + part_extrabytes)
-        if len(ciphertext) == 0:
-            break
+    while ciphertext := infile.read(partsize + part_extrabytes):
         try:
             decrypted, nonce = decrypt_data(
                 executor, ciphertext, symkey, nonce, chunksize, macsize
