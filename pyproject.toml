@@ -23,7 +23,7 @@ cb = "cryptbuddy.main:app"
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.0.2"
 pdoc = "^14.1.0"
-setuptools = "^68.2.2"
+setuptools = ">=68.2.2,<71.0.0"
 
 [build-system]
 requires = ["poetry-core"]
